@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// ============================================================
+// ATTENTION — RÈGLES OUVERTES (LECTURE/ÉCRITURE LIBRES)
+// ============================================================
+// L'application ne se connecte pas à Firebase Authentication : la
+// protection des cliniques repose uniquement sur le "code clinique" et
+// le PIN gérés au niveau de l'application, pas au niveau de la base de
+// données elle-même. Avec les règles ci-dessous, toute personne qui
+// connaît (ou devine) l'URL de votre base Firestore et sa config peut
+// techniquement lire ou modifier N'IMPORTE QUELLE clinique, même sans
+// connaître son code d'accès.
+//
+// C'est acceptable pour tester rapidement, mais À NE PAS GARDER TEL QUEL
+// en production avec de vraies données patients. Si vous voulez des
+// règles plus strictes (par exemple : exiger une connexion Firebase
+// Authentication avant tout accès), dites-le et l'intégration sera
+// ajoutée.
+// ============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

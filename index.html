@@ -867,16 +867,36 @@
 </main>
 </div><!-- /#app -->
 
+<!-- ===== FIREBASE (synchronisation temps réel) ===== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// Remplacez ces valeurs par la configuration de VOTRE projet Firebase
+// (Console Firebase -> Paramètres du projet -> Vos applications -> Config SDK)
+const firebaseConfig = {
+  apiKey: "__FIREBASE_API_KEY__",
+  authDomain: "__FIREBASE_AUTH_DOMAIN__",
+  projectId: "__FIREBASE_PROJECT_ID__",
+  storageBucket: "__FIREBASE_STORAGE_BUCKET__",
+  messagingSenderId: "__FIREBASE_SENDER_ID__",
+  appId: "__FIREBASE_APP_ID__"
+};
+firebase.initializeApp(firebaseConfig);
+const firestoreDB = firebase.firestore();
+firestoreDB.enablePersistence({ synchronizeTabs: true }).catch(() => { /* persistance hors ligne indisponible, on continue quand même */ });
+</script>
+
 <script>
 // ============================================================
-// APPLICATION 100% LOCALE — aucune connexion externe.
-// Toutes les données sont enregistrées dans le navigateur de cet appareil.
+// APPLICATION CLOUD — synchronisation temps réel via Firestore.
+// Toutes les cliniques sont stockées dans la base de données Firebase
+// et se synchronisent automatiquement entre tous les appareils connectés.
 // ============================================================
-const DB_KEY = 'agc_clinic_db';
-const CONFIG_KEY = 'agc_clinic_config';
 let CLINIC_NAME = '';
 let currentUserRole = '';
 let currentUserName = '';
+let currentClinicId = null;
+let clinicListeners = [];
 let unlockedConsultation = false;
 let unlockedLabCatalog = false;
 let rxCart = [];
@@ -887,45 +907,90 @@ function pad2(n) { return String(n).padStart(2, '0'); }
 
 function emptyDB() {
   return {
-    counters: {},
     patients: [], visits: [], appointments: [], staff: [], medications: [],
     invoices: [], expenses: [], departments: [], services: [],
     activities: [], lab_test_catalog: [], lab_results: [], pharmacy_orders: [],
-    clinicInfo: { name: '', logo: '', phone: '', email: '', address: '', codeMedecin: '', codeLabo: '', clinicId: '', createdAt: '', licenseExpires: '', blocked: false, accessCode: '' }
+    clinicInfo: {
+      name: '', logo: '', phone: '', email: '', address: '', codeMedecin: '', codeLabo: '',
+      clinicId: '', createdAt: '', licenseExpires: '', blocked: false, accessCode: '',
+      pin: '', adminName: '', counters: {}
+    }
   };
 }
-function loadDB() {
-  try {
-    const raw = localStorage.getItem(DB_KEY);
-    const db = raw ? JSON.parse(raw) : emptyDB();
-    const empty = emptyDB();
-    Object.keys(empty).forEach(k => { if (db[k] === undefined) db[k] = empty[k]; });
-    if (!db.clinicInfo) db.clinicInfo = empty.clinicInfo;
-    Object.keys(empty.clinicInfo).forEach(k => { if (db.clinicInfo[k] === undefined) db.clinicInfo[k] = empty.clinicInfo[k]; });
-    (db.lab_test_catalog || []).forEach(t => {
-      if (t.reference_range && !t.range_ha) { t.range_ha = t.range_fa = t.range_he = t.range_fe = t.reference_range; }
-      if (!t.result_type) t.result_type = 'numeric';
-    });
-    return db;
-  } catch (e) { return emptyDB(); }
-}
-function saveDB() {
-  localStorage.setItem(DB_KEY, JSON.stringify(DB));
-  if (DB.clinicInfo && DB.clinicInfo.clinicId) {
-    localStorage.setItem('agc_clinic_archive_' + DB.clinicInfo.clinicId, JSON.stringify(DB));
-  }
-}
-let DB = loadDB();
+let DB = emptyDB();
 
-function loadConfig() {
-  try { const raw = localStorage.getItem(CONFIG_KEY); return raw ? JSON.parse(raw) : null; }
-  catch (e) { return null; }
+function clinicRef(id) { return firestoreDB.collection('clinics').doc(id || currentClinicId); }
+function tableRef(table) { return clinicRef(currentClinicId).collection(table); }
+
+function saveClinicInfo() {
+  if (!currentClinicId) return;
+  clinicRef().set(DB.clinicInfo, { merge: true }).catch(err => console.error('Erreur de sauvegarde clinique :', err));
 }
-function saveConfig(cfg) {
-  localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
-  if (cfg && cfg.clinicId) {
-    localStorage.setItem('agc_clinic_archive_config_' + cfg.clinicId, JSON.stringify(cfg));
+function saveClinicCounters() {
+  if (!currentClinicId) return;
+  clinicRef().set({ counters: DB.clinicInfo.counters }, { merge: true }).catch(() => {});
+}
+
+const CLINIC_TABLES = ['patients','visits','appointments','staff','medications','invoices','expenses','departments','services','activities','lab_test_catalog','lab_results','pharmacy_orders'];
+
+function renderTable(table) {
+  switch (table) {
+    case 'patients': loadPatients(); loadOverview(); populateExistingPatientsDropdown(); break;
+    case 'visits': loadAccueilQueue(); loadConsultationList(); loadOverview(); break;
+    case 'appointments': loadAppointments(); break;
+    case 'staff': loadStaff(); populateAgentSelect(); break;
+    case 'medications': loadPharmacy(); populateRxMedDropdown(); break;
+    case 'invoices': loadInvoices(); loadOverview(); break;
+    case 'expenses': loadExpenses(); loadOverview(); break;
+    case 'departments': loadDepartments(); break;
+    case 'services': loadServices(); break;
+    case 'activities': loadActivities(); break;
+    case 'lab_test_catalog': loadLabCatalog(); break;
+    case 'lab_results': loadLabResults(); break;
+    case 'pharmacy_orders': loadPharmacyOrders(); break;
   }
+}
+function setCloudStatus(connected) {
+  const dot = document.getElementById('live-dot');
+  const label = document.getElementById('live-label');
+  if (!dot || !label) return;
+  if (connected) {
+    dot.classList.add('live');
+    label.innerHTML = '☁️ Synchronisé — <span id="clinic-name-label">' + (DB.clinicInfo.name || CLINIC_NAME) + '</span>';
+  } else {
+    dot.classList.remove('live');
+    label.textContent = '⚠️ Connexion au cloud interrompue…';
+  }
+}
+function attachClinicListeners(clinicId) {
+  detachClinicListeners();
+  CLINIC_TABLES.forEach(table => {
+    const unsub = firestoreDB.collection('clinics').doc(clinicId).collection(table).onSnapshot(
+      snap => { DB[table] = snap.docs.map(d => d.data()); renderTable(table); setCloudStatus(true); },
+      err => { console.error('Erreur de synchronisation (' + table + ') :', err); setCloudStatus(false); }
+    );
+    clinicListeners.push(unsub);
+  });
+  const infoUnsub = firestoreDB.collection('clinics').doc(clinicId).onSnapshot(snap => {
+    if (snap.exists) {
+      DB.clinicInfo = snap.data();
+      if (document.getElementById('app').style.display === 'flex') {
+        applyClinicBranding();
+        if (document.getElementById('section-settings').classList.contains('active')) loadSettingsForm();
+      }
+    }
+  });
+  clinicListeners.push(infoUnsub);
+}
+function detachClinicListeners() {
+  clinicListeners.forEach(u => u());
+  clinicListeners = [];
+}
+async function loadClinicById(clinicId, data) {
+  currentClinicId = clinicId;
+  DB = emptyDB();
+  Object.assign(DB.clinicInfo, data);
+  attachClinicListeners(clinicId);
 }
 function generateAccessCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -957,19 +1022,30 @@ function todayDateKey(d) {
 function generatePatientId() {
   const key = todayDateKey();
   const counterKey = 'P_' + key;
-  DB.counters[counterKey] = (DB.counters[counterKey] || 0) + 1;
-  return key + '-' + DB.counters[counterKey];
+  DB.clinicInfo.counters[counterKey] = (DB.clinicInfo.counters[counterKey] || 0) + 1;
+  saveClinicCounters();
+  return key + '-' + DB.clinicInfo.counters[counterKey];
 }
 const ID_PREFIXES = { visits: 'V', appointments: 'RDV', staff: 'S', medications: 'M', invoices: 'F', expenses: 'D', departments: 'DPT', services: 'SV', activities: 'ACT', lab_test_catalog: 'LT', lab_results: 'LR', pharmacy_orders: 'ORD' };
-function uid(prefix) { DB.counters[prefix] = (DB.counters[prefix] || 0) + 1; return prefix + DB.counters[prefix]; }
+function uid(prefix) {
+  DB.clinicInfo.counters[prefix] = (DB.clinicInfo.counters[prefix] || 0) + 1;
+  saveClinicCounters();
+  return prefix + DB.clinicInfo.counters[prefix];
+}
 function dbAdd(table, obj) {
   obj.id = (table === 'patients') ? generatePatientId() : uid(ID_PREFIXES[table] || 'X');
   obj.created_at = new Date().toISOString();
   DB[table].push(obj);
-  saveDB();
+  tableRef(table).doc(obj.id).set(obj).catch(err => console.error('Erreur Firestore (ajout ' + table + ') :', err));
   return obj;
 }
-function dbDelete(table, id) { DB[table] = DB[table].filter(r => r.id !== id); saveDB(); }
+function dbDelete(table, id) {
+  DB[table] = DB[table].filter(r => r.id !== id);
+  tableRef(table).doc(id).delete().catch(err => console.error('Erreur Firestore (suppression ' + table + ') :', err));
+}
+function dbUpdate(table, obj) {
+  tableRef(table).doc(obj.id).set(obj, { merge: true }).catch(err => console.error('Erreur Firestore (mise à jour ' + table + ') :', err));
+}
 
 function getPatientAge(patient) {
   if (!patient) return null;
@@ -1066,44 +1142,14 @@ function closeModal(id) {
 }
 
 const CODE_CONCEPTEUR = 'AGC-CONCEPTEUR-2026';
-const REGISTRY_KEY = 'agc_designer_registry';
 const TRIAL_DAYS = 60;
 
-function loadRegistry() {
-  try { return JSON.parse(localStorage.getItem(REGISTRY_KEY)) || []; } catch (e) { return []; }
-}
-function saveRegistry(reg) { localStorage.setItem(REGISTRY_KEY, JSON.stringify(reg)); }
-function registerClinicCreation(pin) {
-  const reg = loadRegistry();
-  reg.push({
-    clinicId: DB.clinicInfo.clinicId,
-    name: DB.clinicInfo.name,
-    createdAt: DB.clinicInfo.createdAt,
-    licenseExpires: DB.clinicInfo.licenseExpires,
-    blocked: false,
-    accessCode: DB.clinicInfo.accessCode,
-    pin: pin
-  });
-  saveRegistry(reg);
-}
-function updateRegistryEntry() {
-  const reg = loadRegistry();
-  const entry = reg.find(r => r.clinicId === DB.clinicInfo.clinicId);
-  if (entry) {
-    entry.blocked = DB.clinicInfo.blocked;
-    entry.licenseExpires = DB.clinicInfo.licenseExpires;
-    entry.accessCode = DB.clinicInfo.accessCode;
-    entry.name = DB.clinicInfo.name;
-    saveRegistry(reg);
-  }
-}
 function checkAndApplyTrialExpiry() {
   const info = DB.clinicInfo;
   if (!info || !info.licenseExpires) return;
   if (!info.blocked && new Date() > new Date(info.licenseExpires)) {
     info.blocked = true;
-    saveDB();
-    updateRegistryEntry();
+    saveClinicInfo();
   }
 }
 
@@ -1116,62 +1162,33 @@ function verifierConcepteur() {
     return;
   }
   result.style.display = 'block'; result.style.color = 'var(--ink)';
+  result.innerHTML = '<p class="sub">Chargement des cliniques…</p>';
   showConcepteurPanel();
 }
-function ensureAccessCodes() {
-  const reg = loadRegistry();
-  let changed = false;
-  reg.forEach(r => {
-    if (!r.accessCode) { r.accessCode = generateAccessCode(); changed = true; }
-  });
-  if (changed) saveRegistry(reg);
-  if (DB.clinicInfo && DB.clinicInfo.clinicId && !DB.clinicInfo.accessCode) {
-    const entry = reg.find(r => r.clinicId === DB.clinicInfo.clinicId);
-    DB.clinicInfo.accessCode = entry ? entry.accessCode : generateAccessCode();
-    saveDB();
-    if (entry) { entry.accessCode = DB.clinicInfo.accessCode; saveRegistry(reg); }
+async function setClinicBlocked(clinicId, blocked) {
+  const updates = { blocked };
+  if (!blocked) {
+    const next = new Date(); next.setFullYear(next.getFullYear() + 1);
+    updates.licenseExpires = next.toISOString();
   }
-  return reg;
-}
-function setClinicBlocked(clinicId, blocked) {
-  const archKey = 'agc_clinic_archive_' + clinicId;
-  const raw = localStorage.getItem(archKey);
-  let newExpires = null;
-  if (raw) {
-    const archDB = JSON.parse(raw);
-    archDB.clinicInfo.blocked = blocked;
-    if (!blocked) {
-      const next = new Date(); next.setFullYear(next.getFullYear() + 1);
-      archDB.clinicInfo.licenseExpires = next.toISOString();
-      newExpires = archDB.clinicInfo.licenseExpires;
-    }
-    localStorage.setItem(archKey, JSON.stringify(archDB));
-    if (DB.clinicInfo && DB.clinicInfo.clinicId === clinicId) {
-      DB = archDB;
-      localStorage.setItem(DB_KEY, JSON.stringify(DB));
-    }
-  }
-  const reg = loadRegistry();
-  const entry = reg.find(r => r.clinicId === clinicId);
-  if (entry) {
-    entry.blocked = blocked;
-    if (newExpires) entry.licenseExpires = newExpires;
-    saveRegistry(reg);
+  await firestoreDB.collection('clinics').doc(clinicId).set(updates, { merge: true });
+  if (currentClinicId === clinicId) {
+    DB.clinicInfo.blocked = blocked;
+    if (updates.licenseExpires) DB.clinicInfo.licenseExpires = updates.licenseExpires;
   }
   showConcepteurPanel();
 }
 function blockCurrentClinic() { if (DB.clinicInfo && DB.clinicInfo.clinicId) setClinicBlocked(DB.clinicInfo.clinicId, true); }
 function unblockCurrentClinic() { if (DB.clinicInfo && DB.clinicInfo.clinicId) setClinicBlocked(DB.clinicInfo.clinicId, false); }
 
-function showConcepteurPanel() {
+async function showConcepteurPanel() {
   checkAndApplyTrialExpiry();
-  const reg = ensureAccessCodes();
+  const snap = await firestoreDB.collection('clinics').orderBy('createdAt', 'desc').get();
+  const reg = snap.docs.map(d => d.data());
   const info = DB.clinicInfo || {};
-  const cfg = loadConfig();
-  let html = `<p style="margin-bottom:10px">📊 <strong>${reg.length}</strong> clinique(s) créée(s) sur cet appareil.</p>
-    <p class="sub" style="margin-bottom:14px">Cette vue ne couvre que les cliniques créées sur cet appareil/navigateur — pas celles créées ailleurs.</p>`;
+  let html = `<p style="margin-bottom:10px">📊 <strong>${reg.length}</strong> clinique(s) créée(s) au total (toutes machines confondues).</p>`;
 
-  if (cfg && info.clinicId) {
+  if (currentClinicId && info.clinicId) {
     const expires = info.licenseExpires ? new Date(info.licenseExpires) : null;
     const daysLeft = expires ? Math.ceil((expires - new Date()) / 86400000) : null;
     let statusLabel = '🟢 Active';
@@ -1180,12 +1197,12 @@ function showConcepteurPanel() {
     else if (daysLeft !== null) statusLabel = `🟢 Active — licence : ${daysLeft} jour(s) restant(s)`;
 
     html += `<div style="padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:14px">
-      <p><strong>Clinique active sur cet appareil :</strong> ${cfg.name}</p>
+      <p><strong>Clinique actuellement connectée :</strong> ${info.name}</p>
       <p class="sub" style="margin:4px 0 10px">Créée le ${info.createdAt ? new Date(info.createdAt).toLocaleDateString('fr-FR') : '—'} — ${statusLabel}</p>
-      <p class="mono" style="font-size:12px;margin-bottom:4px">Code d'accès (PIN) : <strong>${cfg.pin || '—'}</strong></p>
+      <p class="mono" style="font-size:12px;margin-bottom:4px">Code d'accès (PIN) : <strong>${info.pin || '—'}</strong></p>
       <p class="mono" style="font-size:12px;margin-bottom:10px">Code clinique : <strong>${info.accessCode || '—'}</strong></p>
       <div class="modal-actions">
-        <button class="btn secondary" onclick="copyClinicCode('${cfg.pin || ''}')">📋 Copier le PIN</button>
+        <button class="btn secondary" onclick="copyClinicCode('${info.pin || ''}')">📋 Copier le PIN</button>
         <button class="btn secondary" onclick="copyClinicLink('${info.accessCode || ''}')">🔗 Copier le lien</button>
       </div>
       <div class="modal-actions">
@@ -1195,12 +1212,12 @@ function showConcepteurPanel() {
       </div>
     </div>`;
   } else {
-    html += `<p class="sub" style="margin-bottom:14px">Aucune clinique active sur cet appareil actuellement.</p>`;
+    html += `<p class="sub" style="margin-bottom:14px">Aucune clinique connectée actuellement sur cet appareil.</p>`;
   }
 
   if (reg.length) {
     html += `<table><thead><tr><th>Clinique</th><th>Créée le</th><th>Statut</th><th></th></tr></thead><tbody>`;
-    reg.slice().reverse().forEach(r => {
+    reg.forEach(r => {
       html += `<tr><td>${r.name}</td><td class="mono">${r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '—'}</td><td>${r.blocked ? '🔴 Bloquée' : '🟢 Active'}</td>
       <td><div class="queue-actions">
         <button class="btn secondary" onclick="copyClinicCode('${r.pin || ''}')">PIN</button>
@@ -1220,7 +1237,7 @@ function showError(fieldId, message) {
   el.style.display = 'block';
 }
 
-function submitCreate() {
+async function submitCreate() {
   const clinicName = document.getElementById('create-clinic-name').value.trim();
   const adminName = document.getElementById('create-admin-name').value.trim();
   const pin = document.getElementById('create-pin').value.trim();
@@ -1231,30 +1248,31 @@ function submitCreate() {
     showError('create-error', "Le nom de la clinique, votre nom et un code d'accès sont requis.");
     return;
   }
-  const existing = loadConfig();
-  if (existing) {
-    const ok = confirm('Une clinique existe déjà sur cet appareil ("' + existing.name + '"). La créer à nouveau remplacera définitivement toutes ses données. Continuer ?');
-    if (!ok) return;
-  }
+
   DB = emptyDB();
   const now = new Date();
-  DB.clinicInfo.name = clinicName;
-  DB.clinicInfo.phone = phone;
-  DB.clinicInfo.address = address;
-  DB.clinicInfo.clinicId = 'CL' + now.getTime();
-  DB.clinicInfo.createdAt = now.toISOString();
-  DB.clinicInfo.licenseExpires = new Date(now.getTime() + TRIAL_DAYS * 86400000).toISOString();
-  DB.clinicInfo.blocked = false;
-  DB.clinicInfo.accessCode = generateAccessCode();
-  saveDB();
-  seedDefaults();
-  saveConfig({ name: clinicName, adminName, pin, createdAt: now.toISOString(), clinicId: DB.clinicInfo.clinicId });
-  registerClinicCreation(pin);
+  const clinicId = 'CL' + now.getTime();
+  Object.assign(DB.clinicInfo, {
+    name: clinicName, phone, address,
+    clinicId, createdAt: now.toISOString(),
+    licenseExpires: new Date(now.getTime() + TRIAL_DAYS * 86400000).toISOString(),
+    blocked: false,
+    accessCode: generateAccessCode(),
+    pin, adminName,
+    counters: {}
+  });
+  currentClinicId = clinicId;
   CLINIC_NAME = clinicName;
 
   const clinicLink = buildClinicLink(DB.clinicInfo.accessCode);
   const fileInput = document.getElementById('create-logo-file');
-  const goToApp = () => {
+
+  const finishCreate = async () => {
+    await clinicRef().set(DB.clinicInfo);
+    seedDefaults();
+    attachClinicListeners(clinicId);
+    currentUserRole = 'fondateur';
+    currentUserName = adminName;
     enterApp();
     setTimeout(() => {
       alert("Clinique créée !\n\nCode d'accès (PIN) : " + pin + "\nCode clinique : " + DB.clinicInfo.accessCode + "\nLien de connexion directe : " + clinicLink + "\n\nConservez ces informations — vous pourrez aussi les retrouver depuis l'Espace Concepteur.");
@@ -1262,26 +1280,11 @@ function submitCreate() {
   };
   if (fileInput.files && fileInput.files[0]) {
     const reader = new FileReader();
-    reader.onload = e => { DB.clinicInfo.logo = e.target.result; saveDB(); goToApp(); };
+    reader.onload = async (e) => { DB.clinicInfo.logo = e.target.result; await finishCreate(); };
     reader.readAsDataURL(fileInput.files[0]);
   } else {
-    goToApp();
+    await finishCreate();
   }
-}
-function switchActiveClinicById(clinicId) {
-  if (DB.clinicInfo && DB.clinicInfo.clinicId === clinicId) return true;
-  if (DB.clinicInfo && DB.clinicInfo.clinicId) {
-    localStorage.setItem('agc_clinic_archive_' + DB.clinicInfo.clinicId, JSON.stringify(DB));
-    const curCfg = loadConfig();
-    if (curCfg) localStorage.setItem('agc_clinic_archive_config_' + curCfg.clinicId, JSON.stringify(curCfg));
-  }
-  const archDB = localStorage.getItem('agc_clinic_archive_' + clinicId);
-  const archCfg = localStorage.getItem('agc_clinic_archive_config_' + clinicId);
-  if (!archDB || !archCfg) return false;
-  DB = JSON.parse(archDB);
-  localStorage.setItem(DB_KEY, JSON.stringify(DB));
-  localStorage.setItem(CONFIG_KEY, archCfg);
-  return true;
 }
 function showConnexionScreen(entryName) {
   document.getElementById('loginPage').style.display = 'none';
@@ -1304,42 +1307,45 @@ function showConnexionScreen(entryName) {
 }
 function populateAgentSelect() {
   const select = document.getElementById('agent-select');
+  if (!select) return;
   const staffWithCode = (DB.staff || []).filter(s => s.access_code);
   select.innerHTML = '<option value="">— Sélectionner un agent —</option>' +
     staffWithCode.map(s => `<option value="${s.id}">${s.first_name} ${s.last_name} (${s.role})</option>`).join('');
 }
 function backToLandingFromConnexion() {
+  detachClinicListeners();
+  currentClinicId = null;
   document.getElementById('connexionScreen').style.display = 'none';
   document.getElementById('loginPage').style.display = 'flex';
 }
-function submitAccederCode() {
+async function submitAccederCode() {
   const code = document.getElementById('landing-access-code').value.trim().toUpperCase();
   const err = document.getElementById('landing-access-error');
   err.style.display = 'none';
   if (!code) { err.textContent = 'Le code clinique est requis.'; err.style.display = 'block'; return; }
-  const reg = loadRegistry();
-  const entry = reg.find(r => (r.accessCode || '').toUpperCase() === code);
-  if (!entry) { err.textContent = 'Code clinique introuvable sur cet appareil.'; err.style.display = 'block'; return; }
-  if (!switchActiveClinicById(entry.clinicId)) { err.textContent = 'Données de cette clinique introuvables sur cet appareil.'; err.style.display = 'block'; return; }
+  const snap = await firestoreDB.collection('clinics').where('accessCode', '==', code).limit(1).get();
+  if (snap.empty) { err.textContent = 'Code clinique introuvable.'; err.style.display = 'block'; return; }
+  const doc = snap.docs[0];
+  await loadClinicById(doc.id, doc.data());
   checkAndApplyTrialExpiry();
   if (DB.clinicInfo && DB.clinicInfo.blocked) {
+    detachClinicListeners();
     showBlockedScreen();
     return;
   }
-  showConnexionScreen(entry.name);
+  showConnexionScreen(doc.data().name);
 }
 function submitFondateurLogin() {
   const pin = document.getElementById('fondateur-code').value.trim();
   const err = document.getElementById('fondateur-error');
   err.style.display = 'none';
-  const cfg = loadConfig();
   if (!pin) { err.textContent = 'Le code fondateur est requis.'; err.style.display = 'block'; return; }
-  if (!cfg || cfg.pin !== pin) { err.textContent = 'Code fondateur incorrect.'; err.style.display = 'block'; return; }
+  if (DB.clinicInfo.pin !== pin) { err.textContent = 'Code fondateur incorrect.'; err.style.display = 'block'; return; }
   checkAndApplyTrialExpiry();
-  if (DB.clinicInfo && DB.clinicInfo.blocked) { showBlockedScreen(); return; }
-  CLINIC_NAME = cfg.name;
+  if (DB.clinicInfo.blocked) { showBlockedScreen(); return; }
+  CLINIC_NAME = DB.clinicInfo.name;
   currentUserRole = 'fondateur';
-  currentUserName = cfg.adminName || 'Fondateur';
+  currentUserName = DB.clinicInfo.adminName || 'Fondateur';
   enterApp();
 }
 function submitAgentLogin() {
@@ -1351,10 +1357,9 @@ function submitAgentLogin() {
   const staff = (DB.staff || []).find(s => s.id === staffId);
   if (!staff) { err.textContent = 'Agent introuvable.'; err.style.display = 'block'; return; }
   if (!code || staff.access_code !== code) { err.textContent = 'Code agent incorrect.'; err.style.display = 'block'; return; }
-  const cfg = loadConfig();
   checkAndApplyTrialExpiry();
-  if (DB.clinicInfo && DB.clinicInfo.blocked) { showBlockedScreen(); return; }
-  CLINIC_NAME = cfg ? cfg.name : DB.clinicInfo.name;
+  if (DB.clinicInfo.blocked) { showBlockedScreen(); return; }
+  CLINIC_NAME = DB.clinicInfo.name;
   currentUserRole = 'agent';
   currentUserName = staff.first_name + ' ' + staff.last_name;
   enterApp();
@@ -1379,6 +1384,7 @@ function enterApp() {
   applyRolePermissions();
   loadSettingsForm();
   loadAll();
+  setCloudStatus(true);
 }
 function applyRolePermissions() {
   const roleLabel = document.getElementById('user-role-label');
@@ -1391,10 +1397,13 @@ function applyRolePermissions() {
   if (settingsBtn) settingsBtn.style.display = currentUserRole === 'agent' ? 'none' : 'flex';
 }
 function logout() {
+  detachClinicListeners();
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginPage').style.display = 'flex';
   currentUserRole = '';
   currentUserName = '';
+  currentClinicId = null;
+  DB = emptyDB();
 }
 
 function loadAll() {
@@ -1443,9 +1452,8 @@ function saveSettings() {
   DB.clinicInfo.codeLabo = document.getElementById('set-code-labo').value.trim();
   const fileInput = document.getElementById('set-logo-file');
   const finish = () => {
-    saveDB();
+    saveClinicInfo();
     CLINIC_NAME = DB.clinicInfo.name;
-    const cfg = loadConfig(); if (cfg) { cfg.name = CLINIC_NAME; saveConfig(cfg); }
     applyClinicBranding();
     document.getElementById('clinic-name-label').textContent = CLINIC_NAME;
     const msg = document.getElementById('settings-saved-msg');
@@ -1656,13 +1664,13 @@ function saveConsultationNote(visitId) {
   const v = DB.visits.find(x => x.id === visitId);
   if (!v) return;
   const notesEl = document.getElementById('notes-' + visitId);
-  if (notesEl) { v.consultation_notes = notesEl.value.trim(); saveDB(); }
+  if (notesEl) { v.consultation_notes = notesEl.value.trim(); dbUpdate('visits', v); }
 }
 function callPatientToConsultation(visitId) {
   const v = DB.visits.find(x => x.id === visitId);
   if (!v) return;
   v.status = 'en_consultation';
-  saveDB();
+  dbUpdate('visits', v);
   loadConsultationList(); loadAccueilQueue();
 }
 function markConsulted(visitId) {
@@ -1671,7 +1679,7 @@ function markConsulted(visitId) {
   const notesEl = document.getElementById('notes-' + visitId);
   v.consultation_notes = notesEl ? notesEl.value.trim() : (v.consultation_notes || '');
   v.status = 'consulte';
-  saveDB();
+  dbUpdate('visits', v);
   loadConsultationList(); loadAccueilQueue();
 }
 function markNonConsulted(visitId) {
@@ -1680,7 +1688,7 @@ function markNonConsulted(visitId) {
   const notesEl = document.getElementById('notes-' + visitId);
   if (notesEl) v.consultation_notes = notesEl.value.trim();
   v.status = 'en_consultation';
-  saveDB();
+  dbUpdate('visits', v);
   loadConsultationList(); loadAccueilQueue();
 }
 function printDailyConsultationReport() {
@@ -1688,9 +1696,8 @@ function printDailyConsultationReport() {
   const data = DB.visits.filter(v => v.visit_date === today).sort((a,b)=> a.time.localeCompare(b.time));
   data.forEach(v => {
     const notesEl = document.getElementById('notes-' + v.id);
-    if (notesEl) v.consultation_notes = notesEl.value.trim();
+    if (notesEl) { v.consultation_notes = notesEl.value.trim(); dbUpdate('visits', v); }
   });
-  saveDB();
   const rows = data.map(v => {
     const p = DB.patients.find(pp => pp.id === v.patient_id);
     const name = p ? p.first_name + ' ' + p.last_name : '—';
@@ -2355,22 +2362,23 @@ function drawRevenueChart() {
 // ============================================================
 // CONNEXION DIRECTE VIA LIEN PRÉCIS (?access=CODE)
 // ============================================================
-function tryAutoConnectFromLink() {
+async function tryAutoConnectFromLink() {
   const params = new URLSearchParams(location.search);
   const access = params.get('access');
   if (!access) return;
-  const reg = loadRegistry();
-  const entry = reg.find(r => (r.accessCode || '').toUpperCase() === access.toUpperCase());
-  if (!entry) return; // lien invalide ou clinique absente de cet appareil
-  if (!switchActiveClinicById(entry.clinicId)) return; // données absentes de cet appareil
+  const snap = await firestoreDB.collection('clinics').where('accessCode', '==', access.toUpperCase()).limit(1).get();
+  if (snap.empty) return; // lien invalide ou clinique introuvable
+  const doc = snap.docs[0];
+  await loadClinicById(doc.id, doc.data());
   checkAndApplyTrialExpiry();
   if (DB.clinicInfo && DB.clinicInfo.blocked) {
+    detachClinicListeners();
     showBlockedScreen();
     return;
   }
   // Le lien identifie la clinique (code clinique validé), mais le code
   // fondateur ou agent reste obligatoire avant d'accéder à l'interface.
-  showConnexionScreen(entry.name);
+  showConnexionScreen(doc.data().name);
 }
 tryAutoConnectFromLink();
 </script>
