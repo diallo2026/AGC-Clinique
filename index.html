@@ -490,10 +490,32 @@
     </div>
 
     <div class="panel">
-      <h3>File d'attente du jour</h3>
-      <table>
-        <thead><tr><th>ID</th><th>Patient</th><th>Heure d'arrivée</th><th>Statut</th></tr></thead>
-        <tbody id="accueil-queue-body"><tr><td colspan="4" class="empty">Aucun patient enregistré aujourd'hui.</td></tr></tbody>
+      <h3>Facturation à l'accueil</h3>
+      <p class="sub" style="margin-bottom:12px">Ces frais s'appliquent au prochain patient enregistré ci-dessus (nouveau ou déjà enregistré) et sont automatiquement facturés.</p>
+      <div class="form-row">
+        <input id="acc-carnet-qty" type="number" min="0" value="0" placeholder="Carnets remis (quantité)">
+        <input id="acc-consultation-fee" type="number" min="0" placeholder="Frais de consultation (GNF)">
+      </div>
+      <p class="sub" style="margin-bottom:0">Stock de carnets actuel : <strong id="acc-carnet-stock-display">0</strong></p>
+    </div>
+
+    <div class="panel">
+      <h3>Stock de carnets</h3>
+      <div class="form-row">
+        <input id="acc-carnet-add-qty" type="number" min="0" placeholder="Quantité à ajouter au stock">
+        <input id="acc-carnet-price" type="number" min="0" placeholder="Prix unitaire du carnet (GNF)">
+        <button class="btn secondary" onclick="addCarnetStock()">Mettre à jour le stock / prix</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin-bottom:0">File d'attente du jour</h3>
+        <button class="btn secondary" onclick="printDailyAccueilReport()">🖨️ Rapport journalier (PDF A4)</button>
+      </div>
+      <table style="margin-top:14px">
+        <thead><tr><th>ID</th><th>Patient</th><th>Heure d'arrivée</th><th>Carnet</th><th>Consultation</th><th>Statut</th></tr></thead>
+        <tbody id="accueil-queue-body"><tr><td colspan="6" class="empty">Aucun patient enregistré aujourd'hui.</td></tr></tbody>
       </table>
     </div>
   </section>
@@ -616,6 +638,7 @@
         <div class="form-row">
           <input id="labcat-name" placeholder="Nom de l'examen">
           <input id="labcat-unit" placeholder="Unité (ex : g/dL)">
+          <input id="labcat-price" type="number" min="0" placeholder="Prix (GNF)">
           <select id="labcat-result-type">
             <option value="numeric">Résultat numérique (chiffres)</option>
             <option value="positif_negatif">Résultat Positif / Négatif</option>
@@ -633,14 +656,17 @@
         <button class="btn secondary" onclick="addLabTest()">Ajouter au catalogue</button>
       </div>
       <table style="margin-top:14px">
-        <thead><tr><th>Examen</th><th>Type</th><th>Unité</th><th>Réf. H. adulte</th><th>Réf. F. adulte</th><th>Réf. H. enfant</th><th>Réf. F. enfant</th></tr></thead>
-        <tbody id="labcat-body"><tr><td colspan="7" class="empty">Aucun examen au catalogue.</td></tr></tbody>
+        <thead><tr><th>Examen</th><th>Type</th><th>Prix</th><th>Unité</th><th>Réf. H. adulte</th><th>Réf. F. adulte</th><th>Réf. H. enfant</th><th>Réf. F. enfant</th></tr></thead>
+        <tbody id="labcat-body"><tr><td colspan="8" class="empty">Aucun examen au catalogue.</td></tr></tbody>
       </table>
     </div>
 
     <div class="panel">
-      <h3>Historique des résultats</h3>
-      <table>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin-bottom:0">Historique des résultats</h3>
+        <button class="btn secondary" onclick="printDailyLabReport()">🖨️ Rapport journalier (PDF A4)</button>
+      </div>
+      <table style="margin-top:14px">
         <thead><tr><th>Date</th><th>Patient</th><th>Examen</th><th>Résultat</th><th>Référence</th><th>Statut</th></tr></thead>
         <tbody id="lab-results-body"><tr><td colspan="6" class="empty">Aucun résultat enregistré.</td></tr></tbody>
       </table>
@@ -970,7 +996,7 @@ function emptyDB() {
     clinicInfo: {
       name: '', logo: '', phone: '', email: '', address: '', codeMedecin: '', codeLabo: '',
       clinicId: '', createdAt: '', licenseExpires: '', blocked: false, accessCode: '',
-      pin: '', adminName: '', counters: {}
+      pin: '', adminName: '', counters: {}, carnetStock: 0, carnetPrice: 0
     }
   };
 }
@@ -1675,24 +1701,77 @@ function populateExistingPatientsDropdown() {
     ? data.map(p => `<option value="${p.id}">${p.id} — ${p.first_name} ${p.last_name}</option>`).join('')
     : '<option value="">Aucun patient enregistré</option>';
 }
-function createVisit(patientId) {
+function createVisit(patientId, patientLabel) {
   const now = new Date();
+  const carnetQty = parseInt(document.getElementById('acc-carnet-qty').value, 10) || 0;
+  const consultationFee = parseFloat(document.getElementById('acc-consultation-fee').value) || 0;
+
+  if (carnetQty > 0) {
+    const stock = Number(DB.clinicInfo.carnetStock || 0);
+    if (carnetQty > stock) {
+      alert(`Stock de carnets insuffisant (restant : ${stock}). L'arrivée est enregistrée sans carnet facturé.`);
+    } else {
+      DB.clinicInfo.carnetStock = stock - carnetQty;
+      saveClinicInfo();
+      dbAdd('invoices', {
+        patient_label: patientLabel || null,
+        total_amount: carnetQty * Number(DB.clinicInfo.carnetPrice || 0),
+        status: 'payee',
+        invoice_date: now.toISOString().slice(0,10),
+        label: `Carnet x${carnetQty}`
+      });
+    }
+  }
+  if (consultationFee > 0) {
+    dbAdd('invoices', {
+      patient_label: patientLabel || null,
+      total_amount: consultationFee,
+      status: 'payee',
+      invoice_date: now.toISOString().slice(0,10),
+      label: 'Consultation'
+    });
+  }
+
+  document.getElementById('acc-carnet-qty').value = 0;
+  document.getElementById('acc-consultation-fee').value = '';
+  updateCarnetStockDisplay();
+
   return dbAdd('visits', {
     patient_id: patientId,
     visit_date: now.toISOString().slice(0,10),
     time: pad2(now.getHours()) + ':' + pad2(now.getMinutes()),
     status: 'attente',
-    consultation_notes: null
+    consultation_notes: null,
+    carnet_qty: carnetQty,
+    consultation_fee: consultationFee
   });
+}
+function updateCarnetStockDisplay() {
+  const el = document.getElementById('acc-carnet-stock-display');
+  if (el) el.textContent = Number(DB.clinicInfo.carnetStock || 0);
+}
+function addCarnetStock() {
+  const addQty = parseInt(document.getElementById('acc-carnet-add-qty').value, 10) || 0;
+  const priceInput = document.getElementById('acc-carnet-price').value;
+  const updates = {};
+  if (addQty > 0) updates.carnetStock = Number(DB.clinicInfo.carnetStock || 0) + addQty;
+  if (priceInput !== '') updates.carnetPrice = parseFloat(priceInput) || 0;
+  if (!Object.keys(updates).length) { alert('Renseignez une quantité à ajouter ou un prix.'); return; }
+  Object.assign(DB.clinicInfo, updates);
+  saveClinicInfo();
+  document.getElementById('acc-carnet-add-qty').value = '';
+  document.getElementById('acc-carnet-price').value = '';
+  updateCarnetStockDisplay();
+  alert('Stock de carnets mis à jour.');
 }
 function registerNewPatientAndQueue() {
   const body = collectPatientFields('acc');
   if (!body.first_name || !body.last_name) { alert('Prénom et nom sont requis.'); return; }
   const patient = dbAdd('patients', body);
-  createVisit(patient.id);
+  createVisit(patient.id, patient.first_name + ' ' + patient.last_name);
   clearPatientFields('acc');
   loadPatients(); loadOverview(); populateExistingPatientsDropdown();
-  loadAccueilQueue(); loadConsultationList();
+  loadAccueilQueue(); loadConsultationList(); loadInvoices();
 }
 function queueExistingPatient() {
   const patientId = document.getElementById('acc-existing-patient').value;
@@ -1700,8 +1779,9 @@ function queueExistingPatient() {
   const today = new Date().toISOString().slice(0,10);
   const alreadyQueued = DB.visits.some(v => v.patient_id === patientId && v.visit_date === today);
   if (alreadyQueued) { alert("Ce patient est déjà dans la file d'attente aujourd'hui."); return; }
-  createVisit(patientId);
-  loadAccueilQueue(); loadConsultationList(); loadOverview();
+  const patient = DB.patients.find(p => p.id === patientId);
+  createVisit(patientId, patient ? patient.first_name + ' ' + patient.last_name : null);
+  loadAccueilQueue(); loadConsultationList(); loadOverview(); loadInvoices();
 }
 function visitStatusBadge(status) {
   if (status === 'attente') return '<span class="badge warn">En attente</span>';
@@ -1717,9 +1797,30 @@ function loadAccueilQueue() {
   body.innerHTML = data.length ? data.map(v => {
     const p = DB.patients.find(pp => pp.id === v.patient_id);
     return `<tr><td class="mono">${v.patient_id}</td><td>${p ? p.first_name + ' ' + p.last_name : '—'}</td>
-    <td class="mono">${v.time}</td><td>${visitStatusBadge(v.status)}</td></tr>`;
-  }).join('') : '<tr><td colspan="4" class="empty">Aucun patient enregistré aujourd\'hui.</td></tr>';
+    <td class="mono">${v.time}</td><td class="mono">${v.carnet_qty || 0}</td>
+    <td class="mono">${v.consultation_fee ? Number(v.consultation_fee).toLocaleString('fr-FR') + ' GNF' : '—'}</td>
+    <td>${visitStatusBadge(v.status)}</td></tr>`;
+  }).join('') : '<tr><td colspan="6" class="empty">Aucun patient enregistré aujourd\'hui.</td></tr>';
   document.getElementById('kpi-waiting-today').textContent = data.filter(v => v.status === 'attente').length;
+  updateCarnetStockDisplay();
+}
+function printDailyAccueilReport() {
+  const today = new Date().toISOString().slice(0,10);
+  const data = DB.visits.filter(v => v.visit_date === today).sort((a,b)=> a.time.localeCompare(b.time));
+  const totalCarnets = data.reduce((s,v)=> s + Number(v.carnet_qty||0), 0);
+  const totalConsultations = data.reduce((s,v)=> s + Number(v.consultation_fee||0), 0);
+  const rows = data.map(v => {
+    const p = DB.patients.find(pp => pp.id === v.patient_id);
+    return `<tr><td>${v.time}</td><td>${p ? p.first_name + ' ' + p.last_name : v.patient_id}</td><td>${v.carnet_qty || 0}</td><td>${v.consultation_fee ? Number(v.consultation_fee).toLocaleString('fr-FR') + ' GNF' : '—'}</td></tr>`;
+  }).join('') || '<tr><td colspan="4">Aucun patient aujourd\'hui.</td></tr>';
+  openPrintWindow('Rapport journalier — Accueil', `
+    <h2>Rapport journalier — Accueil</h2>
+    <p>${CLINIC_NAME} — ${new Date().toLocaleDateString('fr-FR')}</p>
+    <table><thead><tr><th>Heure</th><th>Patient</th><th>Carnets</th><th>Consultation</th></tr></thead><tbody>${rows}</tbody></table>
+    <p style="margin-top:14px;font-weight:bold">Total carnets utilisés aujourd'hui : ${totalCarnets}</p>
+    <p style="font-weight:bold">Total facturé (carnets + consultations) : ${(totalCarnets * Number(DB.clinicInfo.carnetPrice||0) + totalConsultations).toLocaleString('fr-FR')} GNF</p>
+    <p>Stock de carnets restant : ${Number(DB.clinicInfo.carnetStock||0)}</p>
+  `);
 }
 
 // ============================================================
@@ -2014,11 +2115,26 @@ function printDailyPharmacyReport() {
   const data = DB.pharmacy_orders.filter(o => o.order_date === today).sort((a,b)=> a.time.localeCompare(b.time));
   const total = data.reduce((s,o)=>s+Number(o.total_amount),0);
   const rows = data.map(o => `<tr><td>${o.time}</td><td>${o.patient_label}</td><td>${o.items.map(it=>it.name+' x'+it.qty).join(', ')}</td><td>${Number(o.total_amount).toLocaleString('fr-FR')} GNF</td></tr>`).join('') || '<tr><td colspan="4">Aucune ordonnance aujourd\'hui.</td></tr>';
+
+  const consumption = {};
+  data.forEach(o => o.items.forEach(it => { consumption[it.name] = (consumption[it.name] || 0) + Number(it.qty); }));
+  const consumptionRows = Object.keys(consumption).sort().map(name => `<tr><td>${name}</td><td>${consumption[name]}</td></tr>`).join('')
+    || '<tr><td colspan="2">Aucun médicament vendu aujourd\'hui.</td></tr>';
+
+  const stockRows = [...DB.medications].sort((a,b)=> a.name.localeCompare(b.name))
+    .map(m => `<tr><td>${m.name}</td><td>${m.current_stock}</td><td>${m.unit || '—'}</td></tr>`).join('')
+    || '<tr><td colspan="3">Aucun médicament enregistré.</td></tr>';
+
   openPrintWindow('Rapport journalier — Pharmacie', `
     <h2>Rapport journalier de pharmacie</h2>
     <p>${CLINIC_NAME} — ${new Date().toLocaleDateString('fr-FR')}</p>
+    <h3 style="margin-top:14px">Ordonnances / ventes du jour</h3>
     <table><thead><tr><th>Heure</th><th>Patient</th><th>Articles</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
     <p style="margin-top:14px;font-weight:bold">Total de la journée : ${total.toLocaleString('fr-FR')} GNF</p>
+    <h3 style="margin-top:18px">Consommation du jour par médicament</h3>
+    <table><thead><tr><th>Médicament</th><th>Quantité vendue</th></tr></thead><tbody>${consumptionRows}</tbody></table>
+    <h3 style="margin-top:18px">Contrôle du stock (état actuel)</h3>
+    <table><thead><tr><th>Médicament</th><th>Stock restant</th><th>Unité</th></tr></thead><tbody>${stockRows}</tbody></table>
   `);
 }
 
@@ -2151,16 +2267,29 @@ function registerLabExams() {
   if (!currentLabRegPatient) { alert("Recherchez d'abord un patient valide."); return; }
   const checked = Array.from(document.querySelectorAll('.labreg-check:checked')).map(c => c.value);
   if (!checked.length) { alert('Cochez au moins un examen à demander.'); return; }
+  let totalBilled = 0;
   checked.forEach(test_id => {
     dbAdd('lab_results', {
       patient_id: currentLabRegPatient.id, test_id,
       result_value: '', flag: null, notes: null, reference_used: null,
       result_date: new Date().toISOString()
     });
+    const test = DB.lab_test_catalog.find(t => t.id === test_id);
+    const price = test ? Number(test.price || 0) : 0;
+    if (price > 0) {
+      totalBilled += price;
+      dbAdd('invoices', {
+        patient_label: currentLabRegPatient.first_name + ' ' + currentLabRegPatient.last_name,
+        total_amount: price,
+        status: 'payee',
+        invoice_date: new Date().toISOString().slice(0,10),
+        label: 'Examen labo — ' + (test ? test.name : test_id)
+      });
+    }
   });
   document.querySelectorAll('.labreg-check:checked').forEach(c => c.checked = false);
-  alert(`${checked.length} examen(s) enregistré(s) pour ${currentLabRegPatient.first_name} ${currentLabRegPatient.last_name}. Ils apparaîtront en attente dans la section "Saisir les résultats".`);
-  loadLabResults();
+  alert(`${checked.length} examen(s) enregistré(s) pour ${currentLabRegPatient.first_name} ${currentLabRegPatient.last_name}.${totalBilled > 0 ? ' Facturé : ' + totalBilled.toLocaleString('fr-FR') + ' GNF.' : ''} Ils apparaîtront en attente dans la section "Saisir les résultats".`);
+  loadLabResults(); loadInvoices();
 }
 
 function lookupLabResPatient() {
@@ -2276,9 +2405,9 @@ function loadLabCatalog() {
   const body = document.getElementById('labcat-body');
   if (body) {
     body.innerHTML = data.length ? data.map(t => `
-      <tr><td>${t.name}</td><td>${LAB_TYPE_LABELS[t.result_type] || 'Numérique'}</td><td>${t.unit || '—'}</td><td class="mono">${t.range_ha || '—'}</td>
+      <tr><td>${t.name}</td><td>${LAB_TYPE_LABELS[t.result_type] || 'Numérique'}</td><td class="mono">${t.price ? Number(t.price).toLocaleString('fr-FR') + ' GNF' : '—'}</td><td>${t.unit || '—'}</td><td class="mono">${t.range_ha || '—'}</td>
       <td class="mono">${t.range_fa || '—'}</td><td class="mono">${t.range_he || '—'}</td><td class="mono">${t.range_fe || '—'}</td></tr>`).join('')
-      : '<tr><td colspan="7" class="empty">Aucun examen au catalogue.</td></tr>';
+      : '<tr><td colspan="8" class="empty">Aucun examen au catalogue.</td></tr>';
   }
   renderLabRegChecklist();
 }
@@ -2286,14 +2415,15 @@ function addLabTest() {
   if (!unlockedLabCatalog) { alert('Déverrouillez le catalogue (Chef Labo / Fondateur).'); return; }
   const name = document.getElementById('labcat-name').value.trim();
   const unit = document.getElementById('labcat-unit').value.trim();
+  const price = parseFloat(document.getElementById('labcat-price').value) || 0;
   const result_type = document.getElementById('labcat-result-type').value;
   const range_ha = document.getElementById('labcat-range-ha').value.trim();
   const range_fa = document.getElementById('labcat-range-fa').value.trim();
   const range_he = document.getElementById('labcat-range-he').value.trim();
   const range_fe = document.getElementById('labcat-range-fe').value.trim();
   if (!name) { alert("Le nom de l'examen est requis."); return; }
-  dbAdd('lab_test_catalog', { name, unit: unit || null, result_type, range_ha: range_ha || null, range_fa: range_fa || null, range_he: range_he || null, range_fe: range_fe || null });
-  ['labcat-name','labcat-unit','labcat-range-ha','labcat-range-fa','labcat-range-he','labcat-range-fe'].forEach(id => document.getElementById(id).value = '');
+  dbAdd('lab_test_catalog', { name, unit: unit || null, price, result_type, range_ha: range_ha || null, range_fa: range_fa || null, range_he: range_he || null, range_fe: range_fe || null });
+  ['labcat-name','labcat-unit','labcat-price','labcat-range-ha','labcat-range-fa','labcat-range-he','labcat-range-fe'].forEach(id => document.getElementById(id).value = '');
   loadLabCatalog();
 }
 function loadLabResults() {
@@ -2309,6 +2439,28 @@ function loadLabResults() {
     <td>${test ? test.name : '—'}</td><td class="mono">${isPending ? '—' : r.result_value}</td><td class="mono">${r.reference_used || '—'}</td>
     <td>${isPending ? '<span class="badge warn">En attente</span>' : `<span class="badge ${r.flag === 'critique' || r.flag === 'eleve' ? 'danger' : r.flag === 'bas' ? 'warn' : 'ok'}">${r.flag}</span>`}</td></tr>`;
   }).join('') : '<tr><td colspan="6" class="empty">Aucun résultat enregistré.</td></tr>';
+}
+function printDailyLabReport() {
+  const today = new Date().toISOString().slice(0,10);
+  const todayResults = DB.lab_results.filter(r => (r.result_date||'').slice(0,10) === today);
+  const counts = {};
+  let totalBilled = 0;
+  todayResults.forEach(r => {
+    const test = DB.lab_test_catalog.find(t => t.id === r.test_id);
+    const name = test ? test.name : r.test_id;
+    counts[name] = (counts[name] || 0) + 1;
+    if (test) totalBilled += Number(test.price || 0);
+  });
+  const rows = Object.keys(counts).sort().map(name => `<tr><td>${name}</td><td>${counts[name]}</td></tr>`).join('')
+    || '<tr><td colspan="2">Aucun examen aujourd\'hui.</td></tr>';
+  openPrintWindow('Rapport journalier — Laboratoire', `
+    <h2>Rapport journalier — Laboratoire</h2>
+    <p>${CLINIC_NAME} — ${new Date().toLocaleDateString('fr-FR')}</p>
+    <h3 style="margin-top:14px">Quantité d'examens (consommables) du jour</h3>
+    <table><thead><tr><th>Examen</th><th>Quantité</th></tr></thead><tbody>${rows}</tbody></table>
+    <p style="margin-top:14px;font-weight:bold">Total d'examens réalisés aujourd'hui : ${todayResults.length}</p>
+    <p style="font-weight:bold">Total facturé : ${totalBilled.toLocaleString('fr-FR')} GNF</p>
+  `);
 }
 
 // ============================================================
