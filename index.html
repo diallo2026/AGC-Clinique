@@ -50,6 +50,7 @@
   .sync-row{display:flex;align-items:center;gap:8px;}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
   .dot.live{animation:blink 1.6s ease-in-out infinite;}
+  .dot.offline{background:var(--red);animation:none;}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
   .sync-card .label{font-size:12px;font-weight:600;color:#fff;}
   .sync-card p{margin:6px 0 0;font-size:11px;color:#7C8AA5;line-height:1.4;}
@@ -358,7 +359,7 @@
       <span class="label" id="live-label">Connecté — <span id="clinic-name-label">ma clinique</span></span>
     </div>
     <p id="user-role-label" style="font-weight:700;color:#CBD5E1;margin-top:8px"></p>
-    <p>Toutes les données sont enregistrées automatiquement sur cet appareil (hors ligne).</p>
+    <p>Toutes les données sont synchronisées automatiquement et en temps réel entre vos appareils via le cloud.</p>
     <button class="logout-btn" onclick="logout()">🔒 Déconnexion</button>
   </div>
 </aside>
@@ -955,11 +956,13 @@ function setCloudStatus(connected) {
   const label = document.getElementById('live-label');
   if (!dot || !label) return;
   if (connected) {
+    dot.classList.remove('offline');
     dot.classList.add('live');
-    label.innerHTML = '☁️ Synchronisé — <span id="clinic-name-label">' + (DB.clinicInfo.name || CLINIC_NAME) + '</span>';
+    label.innerHTML = '☁️ En ligne — <span id="clinic-name-label">' + (DB.clinicInfo.name || CLINIC_NAME) + '</span>';
   } else {
     dot.classList.remove('live');
-    label.textContent = '⚠️ Connexion au cloud interrompue…';
+    dot.classList.add('offline');
+    label.textContent = '🔴 Hors ligne — connexion au cloud interrompue';
   }
 }
 function attachClinicListeners(clinicId) {
@@ -1249,6 +1252,11 @@ async function submitCreate() {
     return;
   }
 
+  const btn = document.querySelector('#modalCreate .modal-actions .btn:not(.secondary)');
+  const originalLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Création en cours…'; }
+  document.getElementById('create-error').style.display = 'none';
+
   DB = emptyDB();
   const now = new Date();
   const clinicId = 'CL' + now.getTime();
@@ -1268,15 +1276,23 @@ async function submitCreate() {
   const fileInput = document.getElementById('create-logo-file');
 
   const finishCreate = async () => {
-    await clinicRef().set(DB.clinicInfo);
-    seedDefaults();
-    attachClinicListeners(clinicId);
-    currentUserRole = 'fondateur';
-    currentUserName = adminName;
-    enterApp();
-    setTimeout(() => {
-      alert("Clinique créée !\n\nCode d'accès (PIN) : " + pin + "\nCode clinique : " + DB.clinicInfo.accessCode + "\nLien de connexion directe : " + clinicLink + "\n\nConservez ces informations — vous pourrez aussi les retrouver depuis l'Espace Concepteur.");
-    }, 300);
+    try {
+      await clinicRef().set(DB.clinicInfo);
+      seedDefaults();
+      attachClinicListeners(clinicId);
+      currentUserRole = 'fondateur';
+      currentUserName = adminName;
+      clearCreateForm();
+      enterApp();
+      setTimeout(() => {
+        alert("Clinique créée !\n\nCode d'accès (PIN) : " + pin + "\nCode clinique : " + DB.clinicInfo.accessCode + "\nLien de connexion directe : " + clinicLink + "\n\nConservez ces informations — vous pourrez aussi les retrouver depuis l'Espace Concepteur.");
+      }, 300);
+    } catch (err) {
+      console.error('Erreur de création de clinique :', err);
+      showError('create-error', firestoreErrorMessage(err));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+    }
   };
   if (fileInput.files && fileInput.files[0]) {
     const reader = new FileReader();
@@ -1285,6 +1301,20 @@ async function submitCreate() {
   } else {
     await finishCreate();
   }
+}
+function clearCreateForm() {
+  ['create-clinic-name','create-admin-name','create-pin','create-phone','create-address'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const fileInput = document.getElementById('create-logo-file');
+  if (fileInput) fileInput.value = '';
+}
+function firestoreErrorMessage(err) {
+  const code = err && err.code;
+  if (code === 'permission-denied') return "Accès refusé par Firestore — les règles de sécurité n'ont probablement pas encore été déployées (commande : firebase deploy --only firestore:rules).";
+  if (code === 'unavailable') return "Impossible de joindre le serveur Firebase — vérifiez votre connexion internet et réessayez.";
+  if (code === 'not-found') return "Base de données Firestore introuvable — vérifiez qu'elle a bien été créée dans la Console Firebase.";
+  return "Erreur lors de l'enregistrement (" + (code || 'inconnue') + ") : " + (err && err.message ? err.message : '') + ". Ouvrez la console du navigateur (touche F12) pour plus de détails.";
 }
 function showConnexionScreen(entryName) {
   document.getElementById('loginPage').style.display = 'none';
@@ -1323,17 +1353,28 @@ async function submitAccederCode() {
   const err = document.getElementById('landing-access-error');
   err.style.display = 'none';
   if (!code) { err.textContent = 'Le code clinique est requis.'; err.style.display = 'block'; return; }
-  const snap = await firestoreDB.collection('clinics').where('accessCode', '==', code).limit(1).get();
-  if (snap.empty) { err.textContent = 'Code clinique introuvable.'; err.style.display = 'block'; return; }
-  const doc = snap.docs[0];
-  await loadClinicById(doc.id, doc.data());
-  checkAndApplyTrialExpiry();
-  if (DB.clinicInfo && DB.clinicInfo.blocked) {
-    detachClinicListeners();
-    showBlockedScreen();
-    return;
+  const btn = document.querySelector('.access-row button');
+  const originalLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const snap = await firestoreDB.collection('clinics').where('accessCode', '==', code).limit(1).get();
+    if (snap.empty) { err.textContent = 'Code clinique introuvable.'; err.style.display = 'block'; return; }
+    const doc = snap.docs[0];
+    await loadClinicById(doc.id, doc.data());
+    checkAndApplyTrialExpiry();
+    if (DB.clinicInfo && DB.clinicInfo.blocked) {
+      detachClinicListeners();
+      showBlockedScreen();
+      return;
+    }
+    showConnexionScreen(doc.data().name);
+  } catch (e) {
+    console.error('Erreur de connexion :', e);
+    err.textContent = firestoreErrorMessage(e);
+    err.style.display = 'block';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
   }
-  showConnexionScreen(doc.data().name);
 }
 function submitFondateurLogin() {
   const pin = document.getElementById('fondateur-code').value.trim();
@@ -1414,8 +1455,6 @@ function loadAll() {
   loadAccueilQueue(); populateExistingPatientsDropdown();
   loadConsultationList();
   loadPharmacyOrders(); populateRxMedDropdown();
-  document.getElementById('live-dot').classList.add('live');
-  document.getElementById('live-label').innerHTML = 'Connecté — <span id="clinic-name-label">' + CLINIC_NAME + '</span>';
 }
 
 // ============================================================
