@@ -174,6 +174,24 @@
   .role-card.agent button{background:linear-gradient(135deg,var(--blue),#1D4ED8);color:#fff;}
   .role-card button:hover{opacity:.92;}
   .role-error{display:none;color:#F87171;font-size:12px;margin:-4px 0 8px;}
+
+  /* ===== Panneau Concepteur ===== */
+  #modalConcepteur .modal-box{max-width:660px;}
+  .concepteur-summary{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--bg);border:1px solid var(--line);border-radius:12px;margin-bottom:16px;}
+  .concepteur-summary .num{font-family:'Manrope',sans-serif;font-weight:800;font-size:28px;color:var(--blue);line-height:1;}
+  .concepteur-summary .lbl{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .concepteur-active-card{padding:16px 18px;border:1.5px solid var(--blue);background:rgba(37,99,235,0.05);border-radius:12px;margin-bottom:18px;}
+  .concepteur-active-card .cac-name{font-family:'Manrope',sans-serif;font-weight:800;font-size:15px;}
+  .concepteur-section-title{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:18px 0 10px;}
+  .concepteur-list{max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;}
+  .clinic-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  .clinic-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .clinic-card-name{font-family:'Manrope',sans-serif;font-weight:800;font-size:14px;}
+  .clinic-card-meta{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .clinic-card-codes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .clinic-card-codes .chip{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;}
+  .clinic-card-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .clinic-card-actions .btn, .clinic-card-actions .btn.secondary{padding:6px 12px;font-size:11.5px;}
   .connexion-back{background:none;border:none;color:#5B6B8C;font-size:12px;cursor:pointer;margin-top:4px;}
   .connexion-back:hover{color:#8CA0C4;}
 
@@ -656,8 +674,8 @@
         <button class="btn secondary" onclick="addLabTest()">Ajouter au catalogue</button>
       </div>
       <table style="margin-top:14px">
-        <thead><tr><th>Examen</th><th>Type</th><th>Prix</th><th>Unité</th><th>Réf. H. adulte</th><th>Réf. F. adulte</th><th>Réf. H. enfant</th><th>Réf. F. enfant</th></tr></thead>
-        <tbody id="labcat-body"><tr><td colspan="8" class="empty">Aucun examen au catalogue.</td></tr></tbody>
+        <thead><tr><th>Examen</th><th>Type</th><th>Prix</th><th>Unité</th><th>Réf. H. adulte</th><th>Réf. F. adulte</th><th>Réf. H. enfant</th><th>Réf. F. enfant</th><th></th></tr></thead>
+        <tbody id="labcat-body"><tr><td colspan="9" class="empty">Aucun examen au catalogue.</td></tr></tbody>
       </table>
     </div>
 
@@ -676,36 +694,38 @@
   <!-- PHARMACY -->
   <section class="section" id="section-pharmacy">
     <div class="panel">
-      <h3>Ajouter un médicament au stock</h3>
+      <h3>Produits — Catalogue &amp; stock</h3>
+      <p class="sub" style="margin-bottom:12px">Tous les produits de la pharmacie sont enregistrés ici. Cette liste alimente automatiquement le menu déroulant utilisé pour composer une ordonnance.</p>
       <div class="form-row">
-        <input id="m-name" placeholder="Nom du médicament">
+        <input id="m-name" placeholder="Nom du produit">
         <input id="m-stock" type="number" placeholder="Stock actuel">
         <input id="m-unit" placeholder="Unité">
-        <input id="m-price" type="number" placeholder="Prix unitaire (GNF)">
+        <input id="m-price" type="number" placeholder="Prix de vente unitaire (GNF)">
         <input id="m-expiry" type="date">
       </div>
-      <button class="btn secondary" onclick="addMedication()">Ajouter au stock</button>
+      <button class="btn secondary" onclick="addMedication()">Ajouter au catalogue</button>
       <table style="margin-top:14px">
-        <thead><tr><th>Médicament</th><th>Stock</th><th>Unité</th><th>Prix</th><th>Péremption</th><th></th></tr></thead>
-        <tbody id="pharmacy-body"><tr><td colspan="6" class="empty">Aucun médicament enregistré.</td></tr></tbody>
+        <thead><tr><th>Produit</th><th>Stock</th><th>Unité</th><th>Prix de vente</th><th>Péremption</th><th></th></tr></thead>
+        <tbody id="pharmacy-body"><tr><td colspan="6" class="empty">Aucun produit enregistré.</td></tr></tbody>
       </table>
     </div>
 
     <div class="panel">
       <h3>Nouvelle ordonnance / vente</h3>
-      <p class="sub" style="margin-bottom:12px">Le pharmacien saisit uniquement l'ID du patient pour le retrouver.</p>
+      <p class="sub" style="margin-bottom:12px">Le pharmacien saisit uniquement l'ID du patient pour le retrouver, puis choisit les produits dans la liste — le prix se remplit automatiquement.</p>
       <div class="form-row">
         <input id="rx-patient-id" placeholder="ID patient (ex : 170726-1)">
         <button class="btn secondary" onclick="lookupRxPatient()">Rechercher</button>
         <span class="sub" id="rx-patient-info" style="align-self:center"></span>
       </div>
       <div class="form-row">
-        <select id="rx-med"></select>
-        <input id="rx-qty" type="number" placeholder="Quantité" value="1">
+        <select id="rx-med" onchange="updateRxUnitPrice()"></select>
+        <input id="rx-qty" type="number" placeholder="Quantité" value="1" oninput="updateRxUnitPrice()">
+        <span class="sub" id="rx-unit-price-display" style="align-self:center;font-weight:700"></span>
         <button class="btn secondary" onclick="addRxItem()">Ajouter à l'ordonnance</button>
       </div>
       <table style="margin-bottom:14px">
-        <thead><tr><th>Médicament</th><th>Qté</th><th>Prix unit.</th><th>Sous-total</th><th></th></tr></thead>
+        <thead><tr><th>Produit</th><th>Qté</th><th>Prix unit.</th><th>Sous-total</th><th></th></tr></thead>
         <tbody id="rx-items-body"><tr><td colspan="4" class="empty">Aucun article ajouté.</td></tr></tbody>
       </table>
       <p style="text-align:right;font-weight:800;margin-bottom:12px">Total : <span id="rx-total">0</span> GNF</p>
@@ -718,8 +738,8 @@
         <button class="btn secondary" onclick="printDailyPharmacyReport()">🖨️ Rapport journalier (PDF A4)</button>
       </div>
       <table style="margin-top:14px">
-        <thead><tr><th>Heure</th><th>Patient</th><th>Articles</th><th>Total</th></tr></thead>
-        <tbody id="pharmacy-orders-body"><tr><td colspan="4" class="empty">Aucune ordonnance aujourd'hui.</td></tr></tbody>
+        <thead><tr><th>Heure</th><th>Patient</th><th>Articles</th><th>Total</th><th></th></tr></thead>
+        <tbody id="pharmacy-orders-body"><tr><td colspan="5" class="empty">Aucune ordonnance aujourd'hui.</td></tr></tbody>
       </table>
     </div>
   </section>
@@ -1281,29 +1301,41 @@ async function showConcepteurPanel() {
   const snap = await firestoreDB.collection('clinics').orderBy('createdAt', 'desc').get();
   const reg = snap.docs.map(d => d.data());
   const info = DB.clinicInfo || {};
-  let html = `<p style="margin-bottom:10px">📊 <strong>${reg.length}</strong> clinique(s) créée(s) au total (toutes machines confondues).</p>`;
+
+  function daysLeftLabel(r) {
+    const expires = r.licenseExpires ? new Date(r.licenseExpires) : null;
+    const daysLeft = expires ? Math.ceil((expires - new Date()) / 86400000) : null;
+    if (r.blocked) return { badge: 'danger', text: 'Bloquée' };
+    if (daysLeft === null) return { badge: '', text: 'Sans licence' };
+    if (daysLeft <= 0) return { badge: 'warn', text: 'Essai expiré' };
+    return { badge: 'ok', text: daysLeft + ' jour(s) restant(s)' };
+  }
+
+  let html = `<div class="concepteur-summary">
+    <div class="num">${reg.length}</div>
+    <div class="lbl">clinique(s) créée(s) au total<br>(toutes machines confondues)</div>
+  </div>`;
 
   if (currentClinicId && info.clinicId) {
-    const expires = info.licenseExpires ? new Date(info.licenseExpires) : null;
-    const daysLeft = expires ? Math.ceil((expires - new Date()) / 86400000) : null;
-    let statusLabel = '🟢 Active';
-    if (info.blocked) statusLabel = '🔴 Bloquée';
-    else if (daysLeft !== null && daysLeft <= 0) statusLabel = '🟠 Essai expiré';
-    else if (daysLeft !== null) statusLabel = `🟢 Active — licence : ${daysLeft} jour(s) restant(s)`;
-
-    html += `<div style="padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:14px">
-      <p><strong>Clinique actuellement connectée :</strong> ${info.name}</p>
-      <p class="sub" style="margin:4px 0 10px">Créée le ${info.createdAt ? new Date(info.createdAt).toLocaleDateString('fr-FR') : '—'} — ${statusLabel}</p>
-      <p class="mono" style="font-size:12px;margin-bottom:4px">Code d'accès (PIN) : <strong>${info.pin || '—'}</strong></p>
-      <p class="mono" style="font-size:12px;margin-bottom:10px">Code clinique : <strong>${info.accessCode || '—'}</strong></p>
-      <div class="modal-actions">
+    const status = daysLeftLabel(info);
+    html += `<div class="concepteur-active-card">
+      <div class="clinic-card-top">
+        <div>
+          <div class="cac-name">${info.name}</div>
+          <div class="clinic-card-meta">Clinique actuellement connectée · créée le ${info.createdAt ? new Date(info.createdAt).toLocaleDateString('fr-FR') : '—'}</div>
+        </div>
+        <span class="badge ${status.badge}">${status.text}</span>
+      </div>
+      <div class="clinic-card-codes">
+        <span class="chip">PIN : ${info.pin || '—'}</span>
+        <span class="chip">Code clinique : ${info.accessCode || '—'}</span>
+      </div>
+      <div class="clinic-card-actions">
         <button class="btn secondary" onclick="copyClinicCode('${info.pin || ''}')">📋 Copier le PIN</button>
         <button class="btn secondary" onclick="copyClinicLink('${info.accessCode || ''}')">🔗 Copier le lien</button>
-      </div>
-      <div class="modal-actions">
         ${info.blocked
-          ? `<button class="btn" onclick="unblockCurrentClinic()">🔓 Débloquer cette clinique</button>`
-          : `<button class="btn secondary" onclick="blockCurrentClinic()">🔒 Bloquer cette clinique</button>`}
+          ? `<button class="btn" onclick="unblockCurrentClinic()">🔓 Débloquer</button>`
+          : `<button class="btn secondary" onclick="blockCurrentClinic()">🔒 Bloquer</button>`}
       </div>
     </div>`;
   } else {
@@ -1311,18 +1343,31 @@ async function showConcepteurPanel() {
   }
 
   if (reg.length) {
-    html += `<table><thead><tr><th>Clinique</th><th>Créée le</th><th>Statut</th><th></th></tr></thead><tbody>`;
+    html += `<div class="concepteur-section-title">Toutes les cliniques</div><div class="concepteur-list">`;
     reg.forEach(r => {
-      html += `<tr><td>${r.name}</td><td class="mono">${r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '—'}</td><td>${r.blocked ? '🔴 Bloquée' : '🟢 Active'}</td>
-      <td><div class="queue-actions">
-        <button class="btn secondary" onclick="copyClinicCode('${r.pin || ''}')">PIN</button>
-        <button class="btn secondary" onclick="copyClinicLink('${r.accessCode || ''}')">Lien</button>
-        ${r.blocked
-          ? `<button class="btn" onclick="setClinicBlocked('${r.clinicId}', false)">Débloquer</button>`
-          : `<button class="btn secondary" onclick="setClinicBlocked('${r.clinicId}', true)">Bloquer</button>`}
-      </div></td></tr>`;
+      const status = daysLeftLabel(r);
+      html += `<div class="clinic-card">
+        <div class="clinic-card-top">
+          <div>
+            <div class="clinic-card-name">${r.name}</div>
+            <div class="clinic-card-meta">Créée le ${r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '—'}</div>
+          </div>
+          <span class="badge ${status.badge}">${status.text}</span>
+        </div>
+        <div class="clinic-card-codes">
+          <span class="chip">PIN : ${r.pin || '—'}</span>
+          <span class="chip">Code : ${r.accessCode || '—'}</span>
+        </div>
+        <div class="clinic-card-actions">
+          <button class="btn secondary" onclick="copyClinicCode('${r.pin || ''}')">📋 PIN</button>
+          <button class="btn secondary" onclick="copyClinicLink('${r.accessCode || ''}')">🔗 Lien</button>
+          ${r.blocked
+            ? `<button class="btn" onclick="setClinicBlocked('${r.clinicId}', false)">🔓 Débloquer</button>`
+            : `<button class="btn secondary" onclick="setClinicBlocked('${r.clinicId}', true)">🔒 Bloquer</button>`}
+        </div>
+      </div>`;
     });
-    html += `</tbody></table>`;
+    html += `</div>`;
   }
   document.getElementById('concepteur-result').innerHTML = html;
 }
@@ -2034,6 +2079,17 @@ function populateRxMedDropdown() {
   select.innerHTML = DB.medications.length
     ? DB.medications.map(m => `<option value="${m.id}">${m.name} (stock: ${m.current_stock})</option>`).join('')
     : '<option value="">Aucun médicament en stock</option>';
+  updateRxUnitPrice();
+}
+function updateRxUnitPrice() {
+  const display = document.getElementById('rx-unit-price-display');
+  if (!display) return;
+  const medId = document.getElementById('rx-med').value;
+  const qty = parseFloat(document.getElementById('rx-qty').value) || 0;
+  const med = DB.medications.find(m => m.id === medId);
+  if (!med) { display.textContent = ''; return; }
+  const price = Number(med.price) || 0;
+  display.textContent = `${price.toLocaleString('fr-FR')} GNF/unité — sous-total : ${(price*qty).toLocaleString('fr-FR')} GNF`;
 }
 function lookupRxPatient() {
   const id = document.getElementById('rx-patient-id').value.trim();
@@ -2072,21 +2128,25 @@ function saveRxAndInvoice() {
   if (!rxCart.length) { alert('Ajoutez au moins un article.'); return; }
   const total = rxCart.reduce((s,it)=>s+it.qty*it.price,0);
   const now = new Date();
+  const patientLabel = currentRxPatient.first_name + ' ' + currentRxPatient.last_name;
+  const receiptItems = rxCart.slice();
   dbAdd('pharmacy_orders', {
     patient_id: currentRxPatient.id,
-    patient_label: currentRxPatient.first_name + ' ' + currentRxPatient.last_name,
-    items: rxCart.slice(),
+    patient_label: patientLabel,
+    items: receiptItems,
     total_amount: total,
     order_date: now.toISOString().slice(0,10),
     time: pad2(now.getHours()) + ':' + pad2(now.getMinutes())
   });
   rxCart.forEach(it => {
     const med = DB.medications.find(m => m.id === it.med_id);
-    if (med) med.current_stock = Math.max(0, Number(med.current_stock) - it.qty);
+    if (med) {
+      med.current_stock = Math.max(0, Number(med.current_stock) - it.qty);
+      dbUpdate('medications', med);
+    }
   });
-  saveDB();
   dbAdd('invoices', {
-    patient_label: currentRxPatient.first_name + ' ' + currentRxPatient.last_name,
+    patient_label: patientLabel,
     total_amount: total,
     status: 'payee',
     invoice_date: now.toISOString().slice(0,10)
@@ -2097,7 +2157,7 @@ function saveRxAndInvoice() {
   document.getElementById('rx-patient-info').textContent = '';
   currentRxPatient = null;
   loadPharmacy(); populateRxMedDropdown(); loadPharmacyOrders(); loadInvoices(); loadOverview();
-  alert('Ordonnance et facture enregistrées.');
+  printPharmacyReceipt(patientLabel, receiptItems, total, now);
 }
 function loadPharmacyOrders() {
   const body = document.getElementById('pharmacy-orders-body');
@@ -2107,8 +2167,26 @@ function loadPharmacyOrders() {
   body.innerHTML = data.length ? data.map(o => `
     <tr><td class="mono">${o.time}</td><td>${o.patient_label}</td>
     <td>${o.items.map(it=>it.name+' x'+it.qty).join(', ')}</td>
-    <td class="mono">${Number(o.total_amount).toLocaleString('fr-FR')} GNF</td></tr>`).join('')
-    : '<tr><td colspan="4" class="empty">Aucune ordonnance aujourd\'hui.</td></tr>';
+    <td class="mono">${Number(o.total_amount).toLocaleString('fr-FR')} GNF</td>
+    <td><button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick='reprintPharmacyReceipt(${JSON.stringify(o).replace(/'/g, "&#39;")})'>🖨️ Reçu</button></td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">Aucune ordonnance aujourd\'hui.</td></tr>';
+}
+function reprintPharmacyReceipt(order) {
+  printPharmacyReceipt(order.patient_label, order.items, order.total_amount, new Date(order.order_date + 'T' + order.time));
+}
+function printPharmacyReceipt(patientLabel, items, total, when) {
+  const info = DB.clinicInfo || {};
+  const rows = items.map(it => `<tr><td>${it.name}</td><td>${it.qty}</td><td>${it.price.toLocaleString('fr-FR')} GNF</td><td>${(it.qty*it.price).toLocaleString('fr-FR')} GNF</td></tr>`).join('');
+  openPrintWindow('Reçu — Pharmacie ' + (info.name || CLINIC_NAME), `
+    <div style="text-align:center;margin-bottom:16px">
+      <h2 style="margin-bottom:2px">Pharmacie ${info.name || CLINIC_NAME}</h2>
+      <p style="margin:0;font-size:12px">${info.address ? info.address : ''}${info.address && info.phone ? ' — ' : ''}${info.phone ? 'Tél : ' + info.phone : ''}</p>
+    </div>
+    <p><strong>Patient :</strong> ${patientLabel}</p>
+    <p><strong>Date :</strong> ${when.toLocaleDateString('fr-FR')} à ${pad2(when.getHours())}:${pad2(when.getMinutes())}</p>
+    <table style="margin-top:12px"><thead><tr><th>Produit</th><th>Qté</th><th>Prix unit.</th><th>Sous-total</th></tr></thead><tbody>${rows}</tbody></table>
+    <p style="text-align:right;margin-top:14px;font-size:16px;font-weight:bold">Total : ${Number(total).toLocaleString('fr-FR')} GNF</p>
+  `);
 }
 function printDailyPharmacyReport() {
   const today = new Date().toISOString().slice(0,10);
@@ -2374,9 +2452,9 @@ function saveLabResults() {
       r.flag = flagEl ? flagEl.value : 'normal';
     }
     savedCount++;
+    dbUpdate('lab_results', r);
   });
   if (!savedCount) { alert('Remplissez au moins un résultat.'); return; }
-  saveDB();
   alert(savedCount + ' résultat(s) enregistré(s).');
   document.getElementById('labres-patient-id').value = '';
   document.getElementById('labres-patient-info').textContent = '';
@@ -2406,10 +2484,17 @@ function loadLabCatalog() {
   if (body) {
     body.innerHTML = data.length ? data.map(t => `
       <tr><td>${t.name}</td><td>${LAB_TYPE_LABELS[t.result_type] || 'Numérique'}</td><td class="mono">${t.price ? Number(t.price).toLocaleString('fr-FR') + ' GNF' : '—'}</td><td>${t.unit || '—'}</td><td class="mono">${t.range_ha || '—'}</td>
-      <td class="mono">${t.range_fa || '—'}</td><td class="mono">${t.range_he || '—'}</td><td class="mono">${t.range_fe || '—'}</td></tr>`).join('')
-      : '<tr><td colspan="8" class="empty">Aucun examen au catalogue.</td></tr>';
+      <td class="mono">${t.range_fa || '—'}</td><td class="mono">${t.range_he || '—'}</td><td class="mono">${t.range_fe || '—'}</td>
+      <td>${currentUserRole === 'fondateur' ? `<button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="deleteLabTest('${t.id}')">Supprimer</button>` : '<span class="sub" style="font-size:11px">🔒</span>'}</td></tr>`).join('')
+      : '<tr><td colspan="9" class="empty">Aucun examen au catalogue.</td></tr>';
   }
   renderLabRegChecklist();
+}
+function deleteLabTest(id) {
+  if (currentUserRole !== 'fondateur') { alert('Seul le Fondateur peut supprimer un examen du catalogue.'); return; }
+  if (!confirm('Supprimer définitivement cet examen du catalogue ?')) return;
+  dbDelete('lab_test_catalog', id);
+  loadLabCatalog();
 }
 function addLabTest() {
   if (!unlockedLabCatalog) { alert('Déverrouillez le catalogue (Chef Labo / Fondateur).'); return; }
