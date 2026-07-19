@@ -418,12 +418,19 @@
     <button class="nav-btn" data-section="hospitalization"><span class="nav-dot"></span>Hospitalisation</button>
     <button class="nav-btn" data-section="maternity"><span class="nav-dot"></span>Maternité</button>
     <button class="nav-btn" data-section="pediatrics"><span class="nav-dot"></span>Pédiatrie</button>
+    <button class="nav-btn" data-section="general-medicine"><span class="nav-dot"></span>Médecine Générale</button>
     <button class="nav-btn" data-section="generalMedicine"><span class="nav-dot"></span>Médecine Générale</button>
+    <button class="nav-btn" data-section="trauma"><span class="nav-dot"></span>Traumatologie</button>
+    <button class="nav-btn" data-section="orl"><span class="nav-dot"></span>ORL</button>
+    <button class="nav-btn" data-section="dental"><span class="nav-dot"></span>Dentaire</button>
+    <button class="nav-btn" data-section="visceral"><span class="nav-dot"></span>Chirurgie Viscérale</button>
     <button class="nav-btn" data-section="surgery"><span class="nav-dot"></span>Bloc Opératoire</button>
     <button class="nav-btn" data-section="caisse"><span class="nav-dot"></span>Caisse</button>
     <button class="nav-btn" data-section="accounting"><span class="nav-dot"></span>Comptabilité</button>
     <button class="nav-btn" data-section="security"><span class="nav-dot"></span>Utilisateurs &amp; Sécurité</button>
     <button class="nav-btn" data-section="bi"><span class="nav-dot"></span>BI &amp; Rapports</button>
+    <button class="nav-btn" data-section="serviceadmin"><span class="nav-dot"></span>Administration des Services</button>
+    <div id="dynamic-services-nav"></div>
     <button class="nav-btn" data-section="pharmacy"><span class="nav-dot"></span>Pharmacie</button>
     <div class="nav-group-label">Organisation</div>
     <button class="nav-btn" data-section="staff"><span class="nav-dot"></span>Personnel</button>
@@ -1453,6 +1460,418 @@
     </div>
   </section>
 
+  <!-- GENERAL MEDICINE -->
+  <section class="section" id="section-generalMedicine">
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi-card blue"><div class="kpi-label">Consultations (mois)</div><div class="kpi-value" id="gm-kpi-consults">0</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Arrêts de travail émis</div><div class="kpi-value" id="gm-kpi-at">0</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Références envoyées</div><div class="kpi-value" id="gm-kpi-ref">0</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Maladies chroniques suivies</div><div class="kpi-value" id="gm-kpi-chronic">0</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Rappels de contrôle dus</div><div class="kpi-value" id="gm-kpi-due">0</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Actions de prévention (mois)</div><div class="kpi-value" id="gm-kpi-prevention">0</div></div>
+    </div>
+
+    <div class="panel" id="gm-reminders-panel" style="display:none">
+      <h3>🔔 Rappels de consultations de contrôle</h3>
+      <div id="gm-reminders-list"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Suivi des maladies chroniques</h3>
+      <div class="form-row">
+        <input id="chr-patient-id" placeholder="N° de dossier patient">
+        <select id="chr-type">
+          <option value="Hypertension artérielle">Hypertension artérielle</option>
+          <option value="Diabète">Diabète</option>
+          <option value="Asthme">Asthme</option>
+          <option value="Insuffisance cardiaque">Insuffisance cardiaque</option>
+          <option value="Maladie rénale chronique">Maladie rénale chronique</option>
+          <option value="Autre">Autre</option>
+        </select>
+        <select id="chr-severity">
+          <option value="Légère">Légère</option>
+          <option value="Modérée">Modérée</option>
+          <option value="Sévère">Sévère</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <textarea id="chr-plan" placeholder="Plan de traitement"></textarea>
+      </div>
+      <div class="form-row">
+        <input id="chr-next-review" type="date" placeholder="Prochaine consultation de contrôle">
+        <button class="btn" onclick="registerChronicCondition()">Enregistrer</button>
+      </div>
+      <table style="margin-top:14px">
+        <thead><tr><th>Patient</th><th>Pathologie</th><th>Sévérité</th><th>Prochain contrôle</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="chronic-conditions-body"><tr><td colspan="6" class="empty">Aucune maladie chronique suivie.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Prévention &amp; éducation thérapeutique</h3>
+      <div class="form-row">
+        <input id="prev-patient-id" placeholder="N° de dossier patient">
+        <select id="prev-type">
+          <option value="depistage">Dépistage</option>
+          <option value="vaccination">Vaccination</option>
+          <option value="conseil">Conseil de santé</option>
+          <option value="education_therapeutique">Éducation thérapeutique</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <input id="prev-desc" placeholder="Description" style="flex:2">
+        <input id="prev-next-due" type="date" placeholder="Prochaine échéance (optionnel)">
+        <button class="btn secondary" onclick="registerPreventionAction()">Enregistrer</button>
+      </div>
+      <table style="margin-top:14px">
+        <thead><tr><th>Date</th><th>Patient</th><th>Type</th><th>Description</th><th>Échéance</th></tr></thead>
+        <tbody id="prevention-body"><tr><td colspan="5" class="empty">Aucune action de prévention enregistrée.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin-bottom:0">Rapports Médecine Générale</h3>
+        <button class="btn secondary" onclick="printGmReport()">🖨️ Rapport (PDF A4)</button>
+      </div>
+      <div class="form-row">
+        <input id="gm-report-from" type="date">
+        <input id="gm-report-to" type="date">
+        <button class="btn" onclick="generateGmReport()">Générer</button>
+      </div>
+      <div id="gm-report-output" class="sub" style="margin-top:10px">Choisissez une période puis cliquez sur « Générer ».</div>
+    </div>
+  </section>
+
+  <!-- TRAUMA -->
+  <section class="section" id="section-trauma">
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi-card blue"><div class="kpi-label">Cas ouverts</div><div class="kpi-value" id="trm-kpi-open">0</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Fractures enregistrées (mois)</div><div class="kpi-value" id="trm-kpi-fractures">0</div></div>
+      <div class="kpi-card red"><div class="kpi-label">En attente de chirurgie</div><div class="kpi-value" id="trm-kpi-surgery">0</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Suivis de contrôle dus</div><div class="kpi-value" id="trm-kpi-followups">0</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Recettes du service</div><div class="kpi-value" id="trm-kpi-revenue">0 GNF</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Nouveau cas de traumatologie</h3>
+      <div class="form-row">
+        <input id="trm-patient-id" placeholder="N° de dossier patient">
+        <button class="btn secondary" onclick="lookupTraumaPatient()">Rechercher</button>
+        <span class="sub" id="trm-patient-info" style="align-self:center"></span>
+      </div>
+      <div class="form-row">
+        <select id="trm-circ-type">
+          <option value="Accident de la voie publique">Accident de la voie publique</option>
+          <option value="Chute">Chute</option>
+          <option value="Accident de travail">Accident de travail</option>
+          <option value="Accident domestique">Accident domestique</option>
+          <option value="Accident de sport">Accident de sport</option>
+          <option value="Agression">Agression</option>
+          <option value="Autre">Autre</option>
+        </select>
+        <input id="trm-circ-date" type="datetime-local">
+        <input id="trm-circ-mechanism" placeholder="Mécanisme / circonstances détaillées" style="flex:2">
+      </div>
+      <div class="form-row">
+        <input id="trm-temp" type="number" step="0.1" placeholder="Température (°C)">
+        <input id="trm-bp" placeholder="Tension artérielle">
+        <input id="trm-pulse" type="number" placeholder="Pouls (bpm)">
+        <input id="trm-spo2" type="number" placeholder="SpO2 (%)">
+        <input id="trm-pain" type="number" min="0" max="10" placeholder="Douleur (0-10)">
+      </div>
+      <div class="form-row"><textarea id="trm-exam" placeholder="Examen clinique"></textarea></div>
+      <div class="form-row"><textarea id="trm-neuro" placeholder="Déficits neurologiques (le cas échéant)"></textarea></div>
+      <div class="form-row"><textarea id="trm-functional" placeholder="Limitations fonctionnelles"></textarea></div>
+      <button class="btn" onclick="registerTraumaCase()">Créer le cas</button>
+    </div>
+
+    <div class="panel">
+      <h3>Cas en cours</h3>
+      <table>
+        <thead><tr><th>N°</th><th>Patient</th><th>Circonstance</th><th>Date</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="trauma-cases-body"><tr><td colspan="6" class="empty">Aucun cas enregistré.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div id="trauma-workspace"></div>
+
+    <div class="panel">
+      <h3>Classification des fractures (configurable)</h3>
+      <p class="sub" style="margin-bottom:12px">Réservé au Fondateur. Un jeu de classifications AO courantes est préchargé.</p>
+      <div class="form-row">
+        <input id="fxc-system" placeholder="Système (ex : AO)" value="AO">
+        <input id="fxc-code" placeholder="Code (ex : 22-A1)">
+        <input id="fxc-label" placeholder="Libellé" style="flex:2">
+        <button class="btn secondary" onclick="addFractureClassification()">Ajouter</button>
+      </div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Système</th><th>Code</th><th>Libellé</th><th></th></tr></thead>
+        <tbody id="fxc-body"><tr><td colspan="4" class="empty">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin-bottom:0">Rapports Traumatologie</h3>
+        <button class="btn secondary" onclick="printTraumaReport()">🖨️ Rapport (PDF A4)</button>
+      </div>
+      <div class="form-row">
+        <input id="trm-report-from" type="date">
+        <input id="trm-report-to" type="date">
+        <button class="btn" onclick="generateTraumaReport()">Générer</button>
+      </div>
+      <div id="trm-report-output" class="sub" style="margin-top:10px">Choisissez une période puis cliquez sur « Générer ».</div>
+    </div>
+  </section>
+
+  <!-- ORL -->
+  <section class="section" id="section-orl">
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi-card blue"><div class="kpi-label">Consultations (mois)</div><div class="kpi-value" id="orl-kpi-consults">0</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Examens réalisés (mois)</div><div class="kpi-value" id="orl-kpi-exams">0</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Orientations bloc opératoire</div><div class="kpi-value" id="orl-kpi-surgery">0</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Recettes du service</div><div class="kpi-value" id="orl-kpi-revenue">0 GNF</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Ouvrir une consultation ORL</h3>
+      <div class="form-row">
+        <input id="orl-patient-id" placeholder="N° de dossier patient">
+        <button class="btn secondary" onclick="openOrlWorkspace(document.getElementById('orl-patient-id').value.trim())">Ouvrir</button>
+      </div>
+      <span class="sub" id="orl-patient-error"></span>
+    </div>
+
+    <div id="orl-workspace"></div>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin-bottom:0">Rapports ORL</h3>
+        <button class="btn secondary" onclick="printOrlReport()">🖨️ Rapport (PDF A4)</button>
+      </div>
+      <div class="form-row">
+        <input id="orl-report-from" type="date">
+        <input id="orl-report-to" type="date">
+        <button class="btn" onclick="generateOrlReport()">Générer</button>
+      </div>
+      <div id="orl-report-output" class="sub" style="margin-top:10px">Choisissez une période puis cliquez sur « Générer ».</div>
+    </div>
+  </section>
+
+  <!-- DENTAL -->
+  <section class="section" id="section-dental">
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi-card blue"><div class="kpi-label">Consultations (mois)</div><div class="kpi-value" id="dent-kpi-consults">0</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Actes réalisés (mois)</div><div class="kpi-value" id="dent-kpi-acts">0</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Devis en attente de validation</div><div class="kpi-value" id="dent-kpi-plans">0</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Recettes</div><div class="kpi-value" id="dent-kpi-revenue">0 GNF</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Ouvrir un dossier dentaire</h3>
+      <div class="form-row">
+        <input id="dent-patient-id" placeholder="N° de dossier patient">
+        <button class="btn secondary" onclick="openDentalWorkspace(document.getElementById('dent-patient-id').value.trim())">Ouvrir</button>
+      </div>
+      <span class="sub" id="dent-patient-error"></span>
+    </div>
+
+    <div id="dental-workspace"></div>
+
+    <div class="panel">
+      <h3>Consommables dentaires</h3>
+      <div class="form-row">
+        <input id="dsup-name" placeholder="Consommable">
+        <input id="dsup-stock" type="number" min="0" placeholder="Stock">
+        <input id="dsup-unit" placeholder="Unité">
+        <button class="btn secondary" onclick="addDentalSupply()">Ajouter</button>
+      </div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Consommable</th><th>Stock</th><th>Unité</th><th></th></tr></thead>
+        <tbody id="dsup-body"><tr><td colspan="4" class="empty">Aucun consommable enregistré.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Instruments &amp; stérilisation</h3>
+      <div class="form-row">
+        <input id="dinst-name" placeholder="Instrument">
+        <button class="btn secondary" onclick="addDentalInstrument()">Ajouter</button>
+      </div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Instrument</th><th>Statut</th><th>Dernière stérilisation</th><th></th></tr></thead>
+        <tbody id="dinst-body"><tr><td colspan="4" class="empty">Aucun instrument enregistré.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Maintenance des équipements</h3>
+      <div class="form-row">
+        <input id="dmaint-name" placeholder="Équipement">
+        <input id="dmaint-next" type="date" placeholder="Prochaine maintenance">
+        <button class="btn secondary" onclick="addDentalEquipment()">Ajouter</button>
+      </div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Équipement</th><th>Dernière maintenance</th><th>Prochaine échéance</th><th></th></tr></thead>
+        <tbody id="dmaint-body"><tr><td colspan="4" class="empty">Aucun équipement enregistré.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin-bottom:0">Rapports Cabinet Dentaire</h3>
+        <button class="btn secondary" onclick="printDentalReport()">🖨️ Rapport (PDF A4)</button>
+      </div>
+      <div class="form-row">
+        <input id="dent-report-from" type="date">
+        <input id="dent-report-to" type="date">
+        <button class="btn" onclick="generateDentalReport()">Générer</button>
+      </div>
+      <div id="dent-report-output" class="sub" style="margin-top:10px">Choisissez une période puis cliquez sur « Générer ».</div>
+    </div>
+  </section>
+
+  <!-- VISCERAL SURGERY -->
+  <section class="section" id="section-visceral">
+    <div class="panel" style="border:1.5px solid var(--amber);background:rgba(217,119,6,0.06)">
+      <p class="sub"><strong>ℹ️ Note d'architecture :</strong> ce module de spécialité s'appuie sur l'infrastructure Bloc Opératoire déjà existante (programmation, salles, validation, compte-rendu, suivi postopératoire) plutôt que de la dupliquer — la "Décision opératoire" crée une vraie demande dans le Bloc Opératoire, taguée "Chirurgie Viscérale". Les champs sont structurés pour faciliter une future compatibilité HL7 FHIR / DICOM / LOINC / SNOMED CT / CIM-11, mais aucune interconnexion réelle avec ces standards externes n'existe dans cette application (elle fonctionne hors-ligne, sans serveur d'interopérabilité).</p>
+    </div>
+
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi-card blue"><div class="kpi-label">Programmées</div><div class="kpi-value" id="visc-kpi-scheduled">0</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Réalisées (mois)</div><div class="kpi-value" id="visc-kpi-done">0</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Annulées</div><div class="kpi-value" id="visc-kpi-cancelled">0</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Urgences chirurgicales</div><div class="kpi-value" id="visc-kpi-urgent">0</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Temps opératoire moyen</div><div class="kpi-value" id="visc-kpi-duration">0 min</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Complications (mois)</div><div class="kpi-value" id="visc-kpi-complications">0</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Recettes</div><div class="kpi-value" id="visc-kpi-revenue">0 GNF</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Ouvrir une consultation de chirurgie viscérale</h3>
+      <div class="form-row">
+        <input id="visc-patient-id" placeholder="N° de dossier patient">
+        <button class="btn secondary" onclick="openVisceralWorkspace(document.getElementById('visc-patient-id').value.trim())">Ouvrir</button>
+      </div>
+      <span class="sub" id="visc-patient-error"></span>
+    </div>
+
+    <div id="visceral-workspace"></div>
+
+    <div class="panel">
+      <h3>Dossiers chirurgicaux viscéraux (Bloc Opératoire)</h3>
+      <p class="sub" style="margin-bottom:12px">Toutes les interventions taguées "Chirurgie Viscérale", tous statuts confondus.</p>
+      <table>
+        <thead><tr><th>N°</th><th>Patient</th><th>Statut</th><th>Salle</th><th>Chirurgien</th><th></th></tr></thead>
+        <tbody id="visceral-cases-body"><tr><td colspan="6" class="empty">Aucun cas de chirurgie viscérale.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin-bottom:0">Rapports Chirurgie Viscérale</h3>
+        <button class="btn secondary" onclick="printVisceralReport()">🖨️ Rapport (PDF A4)</button>
+      </div>
+      <div class="form-row">
+        <input id="visc-report-from" type="date">
+        <input id="visc-report-to" type="date">
+        <button class="btn" onclick="generateVisceralReport()">Générer</button>
+      </div>
+      <div id="visc-report-output" class="sub" style="margin-top:10px">Choisissez une période puis cliquez sur « Générer ».</div>
+    </div>
+  </section>
+
+  <!-- SERVICE ADMINISTRATION -->
+  <section class="section" id="section-serviceadmin">
+    <div class="panel" style="border:1.5px solid var(--amber);background:rgba(217,119,6,0.06)">
+      <p class="sub"><strong>ℹ️ Deux limites techniques à connaître avant de commencer :</strong></p>
+      <p class="sub">1. <strong>Pas de vraie API REST</strong> — cette application est un fichier unique qui fonctionne dans le navigateur, sans serveur. Elle ne peut donc pas exposer de véritable API REST que d'autres applications appelleraient depuis l'extérieur. Ce que vous pouvez faire ici, c'est définir <em>la structure</em> de chaque service (champs, permissions) de façon propre et normalisée — prête à être branchée sur une vraie API le jour où l'application migrera vers un backend.</p>
+      <p class="sub">2. <strong>SMS / Email / WhatsApp non fonctionnels</strong> — aucun fournisseur de messagerie n'est connecté. Les notifications <strong>internes</strong> (déjà utilisées par les autres modules) fonctionnent réellement ; les cases SMS/Email/WhatsApp n'enregistrent qu'une préférence, sans rien envoyer, tant qu'un fournisseur externe n'est pas intégré.</p>
+    </div>
+
+    <div class="panel">
+      <h3>Créer un nouveau service médical</h3>
+      <p class="sub" style="margin-bottom:12px">Réservé au Fondateur (Super Administrateur). Une fois créé, le service apparaît automatiquement dans le menu, sans aucune modification de code.</p>
+      <div class="form-row">
+        <input id="svc-name" placeholder="Nom du service (ex : Cardiologie)">
+        <input id="svc-code" placeholder="Code interne (ex : CARDIO)">
+        <select id="svc-category">
+          <option value="Médecine">Médecine</option>
+          <option value="Chirurgie">Chirurgie</option>
+          <option value="Imagerie">Imagerie</option>
+          <option value="Laboratoire">Laboratoire</option>
+          <option value="Administration">Administration</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
+      <div class="form-row"><textarea id="svc-description" placeholder="Description du service"></textarea></div>
+      <div class="form-row">
+        <input id="svc-responsible" placeholder="Responsable">
+        <input id="svc-phone" placeholder="Téléphone">
+        <input id="svc-email" type="email" placeholder="Email">
+      </div>
+      <div class="form-row">
+        <input id="svc-building" placeholder="Bâtiment">
+        <input id="svc-floor" placeholder="Étage">
+        <input id="svc-room" placeholder="Salle">
+        <input id="svc-hours" placeholder="Horaires (ex : Lun-Ven 8h-17h)">
+      </div>
+      <div class="form-row">
+        <input id="svc-icon" placeholder="Icône (emoji, ex : 🫀)" maxlength="4">
+        <input id="svc-color" type="color" value="#2563EB" style="width:60px;padding:4px">
+        <input id="svc-order" type="number" placeholder="Ordre d'affichage" value="1">
+      </div>
+
+      <p class="concepteur-section-title" style="margin-top:6px">Modules à relier automatiquement</p>
+      <div id="svc-modules-checklist" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
+
+      <p class="concepteur-section-title">Champs spécifiques (formulaire dynamique de consultation)</p>
+      <p class="sub" style="margin-bottom:10px">Ajoutez les champs propres à cette spécialité — ils apparaîtront automatiquement dans le formulaire de saisie du service, sans écrire de code.</p>
+      <div class="form-row">
+        <input id="svc-field-label" placeholder="Libellé du champ (ex : Fréquence cardiaque)">
+        <select id="svc-field-type">
+          <option value="text">Texte</option>
+          <option value="number">Nombre</option>
+          <option value="list">Liste déroulante</option>
+          <option value="date">Date</option>
+          <option value="checkbox">Case à cocher</option>
+          <option value="image">Image</option>
+          <option value="file">Fichier</option>
+          <option value="signature">Signature</option>
+        </select>
+        <input id="svc-field-options" placeholder="Options (si liste, séparées par virgules)">
+        <label style="align-self:center;font-size:12.5px"><input type="checkbox" id="svc-field-required"> Obligatoire</label>
+        <button class="btn secondary" onclick="addServiceFieldDraft()">Ajouter le champ</button>
+      </div>
+      <div id="svc-fields-draft-list" style="margin-bottom:14px"></div>
+
+      <p class="concepteur-section-title">Notifications du service</p>
+      <div class="form-row">
+        <label style="font-size:12.5px"><input type="checkbox" id="svc-notif-internal" checked> Notifications internes (fonctionnelles)</label>
+        <label style="font-size:12.5px"><input type="checkbox" id="svc-notif-sms"> SMS (préférence seulement)</label>
+        <label style="font-size:12.5px"><input type="checkbox" id="svc-notif-email"> Email (préférence seulement)</label>
+        <label style="font-size:12.5px"><input type="checkbox" id="svc-notif-whatsapp"> WhatsApp (préférence seulement)</label>
+      </div>
+
+      <button class="btn" style="margin-top:10px" onclick="createDynamicService()">Créer le service</button>
+      <span class="modal-error" id="svc-create-error"></span>
+    </div>
+
+    <div class="panel">
+      <h3>Services existants</h3>
+      <table>
+        <thead><tr><th></th><th>Nom</th><th>Code</th><th>Catégorie</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="service-registry-body"><tr><td colspan="6" class="empty">Aucun service personnalisé créé.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- DYNAMIC SERVICE (générique, un seul conteneur réutilisé pour tous les services créés) -->
+  <section class="section" id="section-dynamicservice">
+    <div id="dynamic-service-content"></div>
+  </section>
+
   <!-- SURGERY -->
   <section class="section" id="section-surgery">
     <div class="kpi-grid" style="margin-bottom:20px">
@@ -2344,6 +2763,12 @@ function emptyDB() {
     emergency_visits: [], observation_beds: [],
     pregnancies: [], prenatal_visits: [], labor_records: [], deliveries: [], newborn_details: [], postpartum_rounds: [],
     icd_catalog: [], pediatric_consultations: [], milestones_catalog: [], milestone_records: [], vaccination_schedule: [], vaccination_records: [], nutrition_records: [],
+    sick_leaves: [], referrals: [], chronic_conditions: [], prevention_records: [],
+    trauma_cases: [], anatomical_annotations: [], fractures: [], trauma_treatments: [], trauma_followups: [],
+    orl_consultations: [], orl_exams: [], orl_treatments: [],
+    dental_consultations: [], dental_acts: [], dental_treatment_plans: [], dental_imaging: [], dental_supplies: [], dental_instruments: [], dental_equipment_maintenance: [],
+    visceral_consultations: [], abdominal_annotations: [],
+    service_registry: [], service_records: [],
     clinicInfo: {
       name: '', logo: '', phone: '', email: '', address: '', codeMedecin: '', codeLabo: '',
       clinicId: '', createdAt: '', licenseExpires: '', blocked: false, accessCode: '',
@@ -2365,7 +2790,7 @@ function saveClinicCounters() {
   clinicRef().set({ counters: DB.clinicInfo.counters }, { merge: true }).catch(() => {});
 }
 
-const CLINIC_TABLES = ['patients','visits','appointments','staff','medications','invoices','expenses','departments','services','activities','lab_test_catalog','lab_results','pharmacy_orders','hospitalizations','documents','lab_requests','audit_log','notifications','imaging_requests','medication_batches','suppliers','purchase_orders','receptions','supplier_invoices','supplier_returns','stock_movements','prescriptions','rooms','beds','ward_rounds','transfers','operating_rooms','surgical_requests','postop_rounds','cash_sessions','insurance_providers','credit_notes','accounts','journal_entries','fixed_assets','bank_accounts','budgets','cost_centers','user_accounts','roles','login_history','backups','emergency_visits','observation_beds','pregnancies','prenatal_visits','labor_records','deliveries','newborn_details','postpartum_rounds','icd_catalog','pediatric_consultations','milestones_catalog','milestone_records','vaccination_schedule','vaccination_records','nutrition_records','general_medicine_consultations','sick_leaves','referrals','chronic_conditions','prevention_records'];
+const CLINIC_TABLES = ['patients','visits','appointments','staff','medications','invoices','expenses','departments','services','activities','lab_test_catalog','lab_results','pharmacy_orders','hospitalizations','documents','lab_requests','audit_log','notifications','imaging_requests','medication_batches','suppliers','purchase_orders','receptions','supplier_invoices','supplier_returns','stock_movements','prescriptions','rooms','beds','ward_rounds','transfers','operating_rooms','surgical_requests','postop_rounds','cash_sessions','insurance_providers','credit_notes','accounts','journal_entries','fixed_assets','bank_accounts','budgets','cost_centers','user_accounts','roles','login_history','backups','emergency_visits','observation_beds','pregnancies','prenatal_visits','labor_records','deliveries','newborn_details','postpartum_rounds','icd_catalog','pediatric_consultations','milestones_catalog','milestone_records','vaccination_schedule','vaccination_records','nutrition_records','general_medicine_consultations','sick_leaves','referrals','chronic_conditions','prevention_records','trauma_cases','anatomical_annotations','fractures','trauma_treatments','trauma_followups','orl_consultations','orl_exams','orl_treatments','dental_consultations','dental_acts','dental_treatment_plans','dental_imaging','dental_supplies','dental_instruments','dental_equipment_maintenance','visceral_consultations','abdominal_annotations','service_registry','service_records'];
 
 function renderTable(table) {
   switch (table) {
@@ -2420,6 +2845,29 @@ function renderTable(table) {
     case 'milestone_records': if (currentPediWorkspaceId) renderMilestones(currentPediWorkspaceId); break;
     case 'vaccination_records': if (currentPediWorkspaceId) renderVaccinations(currentPediWorkspaceId); loadPediatricsDashboard(); break;
     case 'nutrition_records': if (currentPediWorkspaceId) renderNutrition(currentPediWorkspaceId); break;
+    case 'sick_leaves': loadGmDashboard(); break;
+    case 'referrals': loadGmDashboard(); break;
+    case 'chronic_conditions': loadChronicConditionsList(); loadGmDashboard(); if (currentDmePatientId) renderDmeForPatient(currentDmePatientId); break;
+    case 'prevention_records': loadPreventionList(); loadGmDashboard(); break;
+    case 'trauma_cases': loadTraumaDashboard(); loadTraumaCasesList(); if (currentTraumaCaseId) renderTraumaWorkspace(currentTraumaCaseId); if (currentDmePatientId) renderDmeForPatient(currentDmePatientId); break;
+    case 'anatomical_annotations': if (currentTraumaCaseId) renderAnatomicalAnnotations(currentTraumaCaseId); break;
+    case 'fractures': loadTraumaDashboard(); if (currentTraumaCaseId) renderFracturesList(currentTraumaCaseId); break;
+    case 'trauma_treatments': if (currentTraumaCaseId) renderTraumaTreatments(currentTraumaCaseId); break;
+    case 'trauma_followups': if (currentTraumaCaseId) renderTraumaFollowups(currentTraumaCaseId); break;
+    case 'orl_consultations': loadOrlDashboard(); if (currentOrlPatientId) renderOrlWorkspace(currentOrlPatientId); if (currentDmePatientId) renderDmeForPatient(currentDmePatientId); break;
+    case 'orl_exams': if (currentOrlPatientId) renderOrlExams(currentOrlPatientId); break;
+    case 'orl_treatments': if (currentOrlPatientId) renderOrlTreatments(currentOrlPatientId); break;
+    case 'dental_consultations': loadDentalDashboard(); if (currentDentalPatientId) renderDentalWorkspace(currentDentalPatientId); if (currentDmePatientId) renderDmeForPatient(currentDmePatientId); break;
+    case 'dental_acts': loadDentalDashboard(); if (currentDentalPatientId) { renderOdontogram(currentDentalPatientId); renderDentalActsHistory(currentDentalPatientId); } break;
+    case 'dental_treatment_plans': if (currentDentalPatientId) renderDentalPlans(currentDentalPatientId); break;
+    case 'dental_imaging': if (currentDentalPatientId) renderDentalImaging(currentDentalPatientId); break;
+    case 'dental_supplies': loadDentalSupplies(); break;
+    case 'dental_instruments': loadDentalInstruments(); break;
+    case 'dental_equipment_maintenance': loadDentalEquipment(); break;
+    case 'visceral_consultations': loadVisceralDashboard(); if (currentVisceralPatientId) renderVisceralWorkspace(currentVisceralPatientId); if (currentDmePatientId) renderDmeForPatient(currentDmePatientId); break;
+    case 'abdominal_annotations': if (currentVisceralConsultId) renderAbdominalDiagram(currentVisceralConsultId); break;
+    case 'service_registry': loadServiceRegistryList(); renderDynamicServicesNav(); if (currentDynamicServiceId) renderDynamicServiceSection(currentDynamicServiceId); break;
+    case 'service_records': if (currentDynamicServiceId) renderDynamicServiceRecords(currentDynamicServiceId); break;
     case 'medication_batches': loadBatches(); loadPharmacy(); loadPharmAlerts(); break;
     case 'suppliers': loadSuppliers(); populateSupplierDropdowns(); break;
     case 'purchase_orders': loadPurchaseOrders(); renderReceptionForm(); break;
@@ -2508,7 +2956,7 @@ function generatePatientId() {
   saveClinicCounters();
   return key + '-' + DB.clinicInfo.counters[counterKey];
 }
-const ID_PREFIXES = { visits: 'V', appointments: 'RDV', staff: 'S', medications: 'M', invoices: 'F', expenses: 'D', departments: 'DPT', services: 'SV', activities: 'ACT', lab_test_catalog: 'LT', lab_results: 'LR', pharmacy_orders: 'ORD', hospitalizations: 'HOSP', documents: 'DOC', lab_requests: 'LREQ', audit_log: 'AUD', notifications: 'NOTIF', imaging_requests: 'IMG', medication_batches: 'BATCH', suppliers: 'SUP', purchase_orders: 'PO', receptions: 'REC', supplier_invoices: 'SFAC', supplier_returns: 'RET', stock_movements: 'MVT', prescriptions: 'RX', rooms: 'ROOM', beds: 'BED', ward_rounds: 'WR', transfers: 'TRF', operating_rooms: 'OR', surgical_requests: 'SURG', postop_rounds: 'POP', cash_sessions: 'CASH', insurance_providers: 'INS', credit_notes: 'CN', accounts: 'ACC', journal_entries: 'JE', fixed_assets: 'IMMO', bank_accounts: 'BANK', budgets: 'BUD', cost_centers: 'CC', user_accounts: 'USR', roles: 'ROLE', login_history: 'LOGIN', backups: 'BKP', emergency_visits: 'URG', observation_beds: 'OBED', pregnancies: 'GROS', prenatal_visits: 'CPN', labor_records: 'TRAV', deliveries: 'ACC', newborn_details: 'NNE', postpartum_rounds: 'PP', icd_catalog: 'ICD', pediatric_consultations: 'PED', milestones_catalog: 'MSC', milestone_records: 'MSR', vaccination_schedule: 'VSC', vaccination_records: 'VAC', nutrition_records: 'NUT', general_medicine_consultations: 'GM', sick_leaves: 'AT', referrals: 'REF', chronic_conditions: 'CHR', prevention_records: 'PREV' };
+const ID_PREFIXES = { visits: 'V', appointments: 'RDV', staff: 'S', medications: 'M', invoices: 'F', expenses: 'D', departments: 'DPT', services: 'SV', activities: 'ACT', lab_test_catalog: 'LT', lab_results: 'LR', pharmacy_orders: 'ORD', hospitalizations: 'HOSP', documents: 'DOC', lab_requests: 'LREQ', audit_log: 'AUD', notifications: 'NOTIF', imaging_requests: 'IMG', medication_batches: 'BATCH', suppliers: 'SUP', purchase_orders: 'PO', receptions: 'REC', supplier_invoices: 'SFAC', supplier_returns: 'RET', stock_movements: 'MVT', prescriptions: 'RX', rooms: 'ROOM', beds: 'BED', ward_rounds: 'WR', transfers: 'TRF', operating_rooms: 'OR', surgical_requests: 'SURG', postop_rounds: 'POP', cash_sessions: 'CASH', insurance_providers: 'INS', credit_notes: 'CN', accounts: 'ACC', journal_entries: 'JE', fixed_assets: 'IMMO', bank_accounts: 'BANK', budgets: 'BUD', cost_centers: 'CC', user_accounts: 'USR', roles: 'ROLE', login_history: 'LOGIN', backups: 'BKP', emergency_visits: 'URG', observation_beds: 'OBED', pregnancies: 'GROS', prenatal_visits: 'CPN', labor_records: 'TRAV', deliveries: 'ACC', newborn_details: 'NNE', postpartum_rounds: 'PP', icd_catalog: 'ICD', pediatric_consultations: 'PED', milestones_catalog: 'MSC', milestone_records: 'MSR', vaccination_schedule: 'VSC', vaccination_records: 'VAC', nutrition_records: 'NUT', general_medicine_consultations: 'GM', sick_leaves: 'AT', referrals: 'REF', chronic_conditions: 'CHR', prevention_records: 'PREV', trauma_cases: 'TRM', anatomical_annotations: 'ANAT', fractures: 'FRAC', trauma_treatments: 'TTX', trauma_followups: 'TFU', orl_consultations: 'ORLC', orl_exams: 'ORLE', orl_treatments: 'ORLT', dental_consultations: 'DENTC', dental_acts: 'DACT', dental_treatment_plans: 'DPLAN', dental_imaging: 'DIMG', dental_supplies: 'DSUP', dental_instruments: 'DINST', dental_equipment_maintenance: 'DMAINT', visceral_consultations: 'VISC', abdominal_annotations: 'ABDO', service_registry: 'SVC', service_records: 'SREC' };
 function uid(prefix) {
   DB.clinicInfo.counters[prefix] = (DB.clinicInfo.counters[prefix] || 0) + 1;
   saveClinicCounters();
@@ -2564,7 +3012,7 @@ function seedDefaults() {
 // ============================================================
 // NAVIGATION
 // ============================================================
-const sections = ['overview','accueil','emergency','consultation','patients','dme','appointments','laboratory','imaging','hospitalization','maternity','pediatrics','generalMedicine','surgery','caisse','accounting','security','bi','pharmacy','staff','departments','services','activities','invoices','expenses','reports','settings'];
+const sections = ['overview','accueil','emergency','consultation','patients','dme','appointments','laboratory','imaging','hospitalization','maternity','pediatrics','generalMedicine','trauma','orl','dental','visceral','surgery','caisse','accounting','security','bi','serviceadmin','dynamicservice','pharmacy','staff','departments','services','activities','invoices','expenses','reports','settings'];
 const titles = {
   overview: ['Tableau de bord', "Vue d'ensemble de l'activité de la clinique"],
   accueil: ['Accueil', "Réception, enregistrement et file d'attente du jour"],
@@ -2579,11 +3027,17 @@ const titles = {
   maternity: ['Maternité — Gynécologie — Obstétrique', 'Grossesse, travail, accouchement et suivi du nouveau-né'],
   pediatrics: ['Pédiatrie', "Croissance, vaccination, développement et nutrition de l'enfant"],
   generalMedicine: ['Médecine Générale', 'Consultations, suivi des maladies chroniques et prévention'],
+  trauma: ['Traumatologie & Orthopédie', 'Schéma anatomique, fractures, traitements et suivi'],
+  orl: ['ORL', 'Oto-rhino-laryngologie — consultation, examens spécialisés et traitements'],
+  dental: ['Cabinet Dentaire', "Odontogramme FDI, actes, devis et suivi des traitements"],
+  visceral: ['Chirurgie Viscérale', "Consultation spécialisée, schéma abdominal et suivi opératoire"],
   surgery: ['Bloc Opératoire', 'Programmation, déroulement et suivi des interventions'],
   caisse: ['Caisse & Facturation', 'Encaissement centralisé de tous les services'],
   accounting: ['Comptabilité générale', 'Plan comptable, journal, grand livre et états financiers'],
   security: ['Utilisateurs & Sécurité', 'Rôles, permissions, audit et sauvegardes'],
   bi: ['BI & Rapports', 'Tableaux de bord par direction, rapports et alertes intelligentes'],
+  serviceadmin: ['Administration des Services', 'Créer et configurer de nouveaux services médicaux sans coder'],
+  dynamicservice: ['Service', ''],
   pharmacy: ['Pharmacie', 'Stock, ordonnances et ventes de médicaments'],
   staff: ['Personnel', 'Médecins, infirmiers et équipe administrative'],
   departments: ['Départements', 'Espaces et unités physiques de la clinique'],
@@ -3018,6 +3472,10 @@ function loadAll() {
   loadEmergencyDashboard(); loadTriageQueue(); loadObservationBedsAdmin(); loadEmergencyHistory();
   loadPregnanciesQueue(); loadMaternityDashboard(); loadDeliveryHistory();
   loadIcdCatalog(); loadVaccineSchedule(); loadPediatricsDashboard();
+  loadTraumaDashboard(); loadTraumaCasesList(); loadFxcBody();
+  loadOrlDashboard(); loadDentalDashboard(); loadDentalSupplies(); loadDentalInstruments(); loadDentalEquipment();
+  loadVisceralDashboard();
+  populateServiceModulesChecklist(); loadServiceRegistryList(); renderDynamicServicesNav();
   updateNotifUnreadBadge();
 }
 
@@ -3755,6 +4213,11 @@ function openConsultationForm(visitId) {
   document.getElementById('cf-symptoms').value = v.symptoms || '';
   document.getElementById('cf-antecedents').value = v.antecedents || '';
   document.getElementById('cf-clinical-exam').value = v.clinical_exam || '';
+  const exSys = v.exam_by_system || {};
+  ['cardio','respi','digestif','neuro','osteo','orl','dermato','autre'].forEach(k => { const el = document.getElementById('cf-exam-' + k); if (el) el.value = exSys[k] || ''; });
+  document.getElementById('cf-exam-by-system').style.display = 'none';
+  populateCfIcdSelect();
+  document.getElementById('cf-icd').value = '';
   document.getElementById('cf-temperature').value = v.temperature || '';
   document.getElementById('cf-bp').value = v.blood_pressure || '';
   document.getElementById('cf-heart-rate').value = v.heart_rate || '';
@@ -3821,6 +4284,14 @@ function saveConsultationForm() {
     symptoms: val('cf-symptoms') || null,
     antecedents: val('cf-antecedents') || null,
     clinical_exam: val('cf-clinical-exam') || null,
+    exam_by_system: {
+      cardio: val('cf-exam-cardio') || null, respi: val('cf-exam-respi') || null,
+      digestif: val('cf-exam-digestif') || null, neuro: val('cf-exam-neuro') || null,
+      osteo: val('cf-exam-osteo') || null, orl: val('cf-exam-orl') || null,
+      dermato: val('cf-exam-dermato') || null, autre: val('cf-exam-autre') || null
+    },
+    diagnosis_icd_code: (function(){ const c = DB.icd_catalog.find(x=>x.id===val('cf-icd')); return c ? c.code : (v.diagnosis_icd_code||null); })(),
+    diagnosis_icd_label: (function(){ const c = DB.icd_catalog.find(x=>x.id===val('cf-icd')); return c ? c.label : (v.diagnosis_icd_label||null); })(),
     temperature: document.getElementById('cf-temperature').value || null,
     blood_pressure: val('cf-bp') || null,
     heart_rate: document.getElementById('cf-heart-rate').value || null,
@@ -9827,6 +10298,2329 @@ function printPediatricsReport() {
   const content = document.getElementById("ped-report-printable");
   if (!content) { alert("Générez d'abord un rapport."); return; }
   openPrintWindow("Rapport Pédiatrie", `<h2>Rapport Pédiatrie</h2><p>${CLINIC_NAME} — ${new Date().toLocaleDateString('fr-FR')}</p>${content.outerHTML}`);
+}
+
+
+// ============================================================
+// MÉDECINE GÉNÉRALE
+// ============================================================
+
+// ---- Intégration CIM-10 dans la Consultation ----
+function populateCfIcdSelect() {
+  seedIcdCatalogIfNeeded();
+  const sel = document.getElementById("cf-icd");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Code CIM-10 (optionnel) —</option>' + DB.icd_catalog.map(c => `<option value="${c.id}">${c.code} — ${c.label}</option>`).join("");
+}
+function applyCfIcdSelection() {
+  const c = DB.icd_catalog.find(x => x.id === val("cf-icd"));
+  if (!c) return;
+  const diagEl = document.getElementById("cf-diagnosis");
+  if (!diagEl.value) diagEl.value = c.label;
+}
+
+// ---- Arrêt de travail ----
+function openConsultWorkStoppage() {
+  document.getElementById("cf-subpanel").innerHTML = `
+    <div class="panel" style="background:var(--bg);margin-bottom:14px">
+      <h3>Arrêt de travail</h3>
+      <div class="form-row">
+        <input id="at-start" type="date" value="${new Date().toISOString().slice(0,10)}">
+        <input id="at-duration" type="number" min="1" placeholder="Durée (jours)">
+      </div>
+      <div class="form-row"><textarea id="at-reason" placeholder="Motif médical"></textarea></div>
+      <button class="btn secondary" onclick="submitConsultWorkStoppage()">Générer l'arrêt de travail</button>
+    </div>`;
+}
+function submitConsultWorkStoppage() {
+  const v = DB.visits.find(x => x.id === currentConsultVisitId);
+  if (!v) return;
+  const start = document.getElementById("at-start").value;
+  const duration = parseInt(document.getElementById("at-duration").value, 10);
+  const reason = val("at-reason");
+  if (!start || !duration) { alert("Date de début et durée sont requises."); return; }
+  const endDate = new Date(start);
+  endDate.setDate(endDate.getDate() + duration - 1);
+  const p = DB.patients.find(pp => pp.id === v.patient_id);
+  const sickLeave = dbAdd("sick_leaves", {
+    patient_id: v.patient_id, visit_id: v.id, start_date: start, duration_days: duration,
+    end_date: endDate.toISOString().slice(0,10), reason: reason || null,
+    doctor_name: v.doctor_name || currentUserName || null, issued_at: new Date().toISOString()
+  });
+  logAudit("Arrêt de travail émis", "N° " + sickLeave.id + " — " + duration + " j — Patient " + v.patient_id);
+  printWorkStoppage(sickLeave, p);
+  document.getElementById("cf-subpanel").innerHTML = "";
+  alert("Arrêt de travail généré.");
+}
+function printWorkStoppage(sl, p) {
+  const info = DB.clinicInfo || {};
+  openPrintWindow("Arrêt de travail — " + sl.id, `
+    <div style="text-align:center;margin-bottom:10px">
+      ${info.logo ? `<img src="${info.logo}" style="width:56px;height:56px;object-fit:contain;margin-bottom:6px">` : ""}
+      <h2 style="margin-bottom:2px">${info.name || CLINIC_NAME}</h2>
+      <p style="margin:0;font-size:12px">${info.address || ""}${info.address && info.phone ? " — " : ""}${info.phone ? "Tél : " + info.phone : ""}</p>
+    </div>
+    <h3 style="text-align:center">CERTIFICAT D'ARRÊT DE TRAVAIL</h3>
+    <p><strong>Je soussigné(e),</strong> ${sl.doctor_name || "—"}, certifie que :</p>
+    <p><strong>${p ? p.first_name + " " + p.last_name : sl.patient_id}</strong>, N° dossier ${sl.patient_id}, doit interrompre son activité professionnelle du <strong>${sl.start_date}</strong> au <strong>${sl.end_date}</strong> inclus, soit <strong>${sl.duration_days} jour(s)</strong>.</p>
+    ${sl.reason ? "<p><strong>Motif :</strong> " + sl.reason + "</p>" : ""}
+    <p style="margin-top:40px">Fait pour servir et valoir ce que de droit.</p>
+    <p style="margin-top:30px">Signature et cachet : ______________________</p>
+  `);
+}
+
+// ---- Référence vers spécialiste ----
+function openConsultReferral() {
+  document.getElementById("cf-subpanel").innerHTML = `
+    <div class="panel" style="background:var(--bg);margin-bottom:14px">
+      <h3>Référence vers une spécialité</h3>
+      <div class="form-row">
+        <select id="ref-specialty">
+          <option value="Cardiologie">Cardiologie</option>
+          <option value="Chirurgie viscérale">Chirurgie viscérale</option>
+          <option value="Pédiatrie">Pédiatrie</option>
+          <option value="Maternité / Gynécologie">Maternité / Gynécologie</option>
+          <option value="ORL">ORL</option>
+          <option value="Traumatologie">Traumatologie</option>
+          <option value="Laboratoire">Laboratoire</option>
+          <option value="Imagerie">Imagerie</option>
+          <option value="Autre">Autre</option>
+        </select>
+        <input id="ref-doctor" placeholder="Médecin destinataire (optionnel)">
+        <select id="ref-urgency"><option value="Normal">Normal</option><option value="Urgent">Urgent</option></select>
+      </div>
+      <div class="form-row"><textarea id="ref-reason" placeholder="Motif de la référence"></textarea></div>
+      <button class="btn secondary" onclick="submitConsultReferral()">Générer la référence</button>
+    </div>`;
+}
+function submitConsultReferral() {
+  const v = DB.visits.find(x => x.id === currentConsultVisitId);
+  if (!v) return;
+  const reason = val("ref-reason");
+  if (!reason) { alert("Le motif de la référence est requis."); return; }
+  const p = DB.patients.find(pp => pp.id === v.patient_id);
+  const referral = dbAdd("referrals", {
+    patient_id: v.patient_id, visit_id: v.id, target_specialty: val("ref-specialty"),
+    target_doctor: val("ref-doctor") || null, urgency: val("ref-urgency"), reason,
+    doctor_name: v.doctor_name || currentUserName || null, issued_at: new Date().toISOString(), status: "envoyee"
+  });
+  if (referral.target_doctor) notifyUser(referral.target_doctor, "Nouvelle référence reçue pour " + (p ? p.first_name + " " + p.last_name : v.patient_id) + " (" + referral.target_specialty + ").", "consultation", referral.id);
+  logAudit("Référence spécialiste émise", "N° " + referral.id + " — " + referral.target_specialty + " — Patient " + v.patient_id);
+  printReferralLetter(referral, p);
+  document.getElementById("cf-subpanel").innerHTML = "";
+  alert("Référence générée et envoyée.");
+}
+function printReferralLetter(ref, p) {
+  const info = DB.clinicInfo || {};
+  openPrintWindow("Référence — " + ref.id, `
+    <div style="text-align:center;margin-bottom:10px">
+      ${info.logo ? `<img src="${info.logo}" style="width:56px;height:56px;object-fit:contain;margin-bottom:6px">` : ""}
+      <h2 style="margin-bottom:2px">${info.name || CLINIC_NAME}</h2>
+    </div>
+    <h3 style="text-align:center">LETTRE DE RÉFÉRENCE</h3>
+    <p><strong>À l'attention de :</strong> ${ref.target_doctor || "Confrère / Consœur"} — Service : ${ref.target_specialty}</p>
+    <p><strong>Concernant :</strong> ${p ? p.first_name + " " + p.last_name : ref.patient_id}, N° dossier ${ref.patient_id}${p && getPatientAge(p)!==null ? ", " + getPatientAge(p) + " ans" : ""}</p>
+    <p><strong>Priorité :</strong> ${ref.urgency}</p>
+    <div style="margin-top:16px;white-space:pre-wrap"><strong>Motif de la référence :</strong><br>${ref.reason}</div>
+    <p style="margin-top:30px">Confraternellement,</p>
+    <p style="margin-top:20px">${ref.doctor_name || "—"} — Signature : ______________________</p>
+  `);
+}
+
+// ---- Maladies chroniques ----
+function registerChronicCondition() {
+  const patientId = val("chr-patient-id");
+  const p = DB.patients.find(pp => pp.id === patientId);
+  if (!p) { alert("Patient introuvable."); return; }
+  const nextReview = document.getElementById("chr-next-review").value;
+  const condition = dbAdd("chronic_conditions", {
+    patient_id: patientId, patient_label: p.first_name + " " + p.last_name,
+    condition_type: val("chr-type"), severity: val("chr-severity"),
+    treatment_plan: val("chr-plan") || null, next_review_date: nextReview || null,
+    diagnosed_date: new Date().toISOString().slice(0,10), status: "actif",
+    doctor_name: currentUserName || null
+  });
+  logAudit("Maladie chronique enregistrée", condition.condition_type + " — Patient " + patientId);
+  ["chr-patient-id","chr-plan","chr-next-review"].forEach(id => document.getElementById(id).value = "");
+  loadChronicConditionsList(); loadGmDashboard();
+}
+function markChronicReviewDone(id) {
+  const c = DB.chronic_conditions.find(x => x.id === id);
+  if (!c) return;
+  const next = prompt("Date de la prochaine consultation de contrôle :", c.next_review_date || "");
+  if (next === null) return;
+  c.next_review_date = next || null;
+  c.status = "controle";
+  dbUpdate("chronic_conditions", c);
+  logAudit("Contrôle maladie chronique réalisé", c.condition_type + " — Patient " + c.patient_id);
+  loadChronicConditionsList(); loadGmDashboard();
+}
+function resolveChronicCondition(id) {
+  const c = DB.chronic_conditions.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm("Marquer cette pathologie comme résolue ?")) return;
+  c.status = "resolu";
+  dbUpdate("chronic_conditions", c);
+  loadChronicConditionsList(); loadGmDashboard();
+}
+function loadChronicConditionsList() {
+  const body = document.getElementById("chronic-conditions-body");
+  if (!body) return;
+  const data = DB.chronic_conditions.filter(c => c.status !== "resolu").sort((a,b) => (a.next_review_date||"").localeCompare(b.next_review_date||""));
+  const today = new Date().toISOString().slice(0,10);
+  body.innerHTML = data.length ? data.map(c => {
+    const due = c.next_review_date && c.next_review_date <= today;
+    return `<tr><td>${c.patient_label || c.patient_id}</td><td>${c.condition_type}</td><td>${c.severity || "—"}</td>
+    <td class="mono" style="${due ? "color:var(--red);font-weight:700" : ""}">${c.next_review_date || "—"}</td>
+    <td><span class="badge ${due ? "danger" : "ok"}">${c.status === "controle" ? "Contrôlé" : "Actif"}</span></td>
+    <td><div class="queue-actions">
+      <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="markChronicReviewDone('${c.id}')">Contrôle fait</button>
+      <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="resolveChronicCondition('${c.id}')">Résolu</button>
+    </div></td></tr>`;
+  }).join("") : '<tr><td colspan="6" class="empty">Aucune maladie chronique suivie.</td></tr>';
+}
+
+// ---- Prévention ----
+function registerPreventionAction() {
+  const patientId = val("prev-patient-id");
+  const p = DB.patients.find(pp => pp.id === patientId);
+  if (!p) { alert("Patient introuvable."); return; }
+  dbAdd("prevention_records", {
+    patient_id: patientId, patient_label: p.first_name + " " + p.last_name,
+    type: val("prev-type"), description: val("prev-desc") || null,
+    date: new Date().toISOString().slice(0,10), next_due_date: document.getElementById("prev-next-due").value || null,
+    doctor_name: currentUserName || null
+  });
+  logAudit("Action de prévention enregistrée", val("prev-type") + " — Patient " + patientId);
+  ["prev-patient-id","prev-desc","prev-next-due"].forEach(id => document.getElementById(id).value = "");
+  loadPreventionList(); loadGmDashboard();
+}
+const PREVENTION_TYPE_LABELS = { depistage: "Dépistage", vaccination: "Vaccination", conseil: "Conseil de santé", education_therapeutique: "Éducation thérapeutique" };
+function loadPreventionList() {
+  const body = document.getElementById("prevention-body");
+  if (!body) return;
+  const data = [...DB.prevention_records].sort((a,b) => (b.date||"").localeCompare(a.date||"")).slice(0,50);
+  body.innerHTML = data.length ? data.map(r => `
+    <tr><td class="mono">${r.date}</td><td>${r.patient_label || r.patient_id}</td><td>${PREVENTION_TYPE_LABELS[r.type] || r.type}</td>
+    <td>${r.description || "—"}</td><td class="mono">${r.next_due_date || "—"}</td></tr>`).join("")
+    : '<tr><td colspan="5" class="empty">Aucune action de prévention enregistrée.</td></tr>';
+}
+
+// ---- Tableau de bord & rappels ----
+function loadGmDashboard() {
+  if (!document.getElementById("gm-kpi-consults")) return;
+  const now = new Date();
+  const monthPrefix = now.getFullYear() + "-" + pad2(now.getMonth()+1);
+  document.getElementById("gm-kpi-consults").textContent = DB.visits.filter(v => v.status === "consulte" && (v.visit_date||"").startsWith(monthPrefix)).length;
+  document.getElementById("gm-kpi-at").textContent = DB.sick_leaves.filter(s => (s.issued_at||"").startsWith(monthPrefix)).length;
+  document.getElementById("gm-kpi-ref").textContent = DB.referrals.filter(r => (r.issued_at||"").startsWith(monthPrefix)).length;
+  document.getElementById("gm-kpi-chronic").textContent = DB.chronic_conditions.filter(c => c.status !== "resolu").length;
+  const today = now.toISOString().slice(0,10);
+  const due = DB.chronic_conditions.filter(c => c.status !== "resolu" && c.next_review_date && c.next_review_date <= today);
+  document.getElementById("gm-kpi-due").textContent = due.length;
+  document.getElementById("gm-kpi-prevention").textContent = DB.prevention_records.filter(r => (r.date||"").startsWith(monthPrefix)).length;
+
+  const panel = document.getElementById("gm-reminders-panel");
+  const list = document.getElementById("gm-reminders-list");
+  if (panel && list) {
+    if (due.length) {
+      panel.style.display = "block";
+      list.innerHTML = due.map(c => `<p class="sub" style="color:var(--red);font-weight:600">⚠️ ${c.patient_label} — ${c.condition_type} — contrôle dû depuis le ${c.next_review_date}</p>`).join("");
+    } else { panel.style.display = "none"; }
+  }
+}
+
+// ---- Rapports ----
+function generateGmReport() {
+  const from = document.getElementById("gm-report-from").value;
+  const to = document.getElementById("gm-report-to").value;
+  const consults = DB.visits.filter(v => v.status === "consulte" && (!from || v.visit_date >= from) && (!to || v.visit_date <= to));
+  const byDiagnosis = {};
+  consults.forEach(v => { const d = v.diagnosis_icd_label || v.diagnosis || "Non précisé"; byDiagnosis[d] = (byDiagnosis[d]||0)+1; });
+  const atCount = DB.sick_leaves.filter(s => (!from || s.start_date >= from) && (!to || s.start_date <= to)).length;
+  const refCount = DB.referrals.filter(r => (!from || (r.issued_at||"") >= from) && (!to || (r.issued_at||"") <= to)).length;
+  const prescriptionsCount = consults.filter(v => v.prescription).length;
+
+  document.getElementById("gm-report-output").innerHTML = `
+    <div id="gm-report-printable">
+      <div class="kpi-grid" style="margin-bottom:14px">
+        <div class="kpi-card blue"><div class="kpi-label">Consultations</div><div class="kpi-value">${consults.length}</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Prescriptions émises</div><div class="kpi-value">${prescriptionsCount}</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">Arrêts de travail</div><div class="kpi-value">${atCount}</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">Références</div><div class="kpi-value">${refCount}</div></div>
+      </div>
+      <h3 style="font-size:14px;margin-bottom:8px">Pathologies les plus fréquentes</h3>
+      <table><thead><tr><th>Diagnostic</th><th>Nombre</th></tr></thead><tbody>
+      ${Object.keys(byDiagnosis).sort((a,b)=>byDiagnosis[b]-byDiagnosis[a]).slice(0,10).map(k => `<tr><td>${k}</td><td>${byDiagnosis[k]}</td></tr>`).join("") || '<tr><td colspan="2" class="empty">Aucune donnée.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+function printGmReport() {
+  const content = document.getElementById("gm-report-printable");
+  if (!content) { alert("Générez d'abord un rapport."); return; }
+  openPrintWindow("Rapport Médecine Générale", `<h2>Rapport Médecine Générale</h2><p>${CLINIC_NAME} — ${new Date().toLocaleDateString('fr-FR')}</p>${content.outerHTML}`);
+}
+
+
+// ============================================================
+// TRAUMATOLOGIE & ORTHOPÉDIE
+// ============================================================
+let currentTraumaLookupPatient = null;
+let currentTraumaCaseId = null;
+let currentBodyView = "face";
+
+const FRONT_REGIONS = [
+  { code: "head", label: "Tête", x: 150, y: 28 },
+  { code: "neck", label: "Cou", x: 150, y: 60 },
+  { code: "shoulder_l", label: "Épaule G", x: 108, y: 85 },
+  { code: "shoulder_r", label: "Épaule D", x: 192, y: 85 },
+  { code: "chest", label: "Thorax", x: 150, y: 115 },
+  { code: "arm_l", label: "Bras G", x: 85, y: 135 },
+  { code: "arm_r", label: "Bras D", x: 215, y: 135 },
+  { code: "abdomen", label: "Abdomen", x: 150, y: 155 },
+  { code: "elbow_l", label: "Coude G", x: 78, y: 175 },
+  { code: "elbow_r", label: "Coude D", x: 222, y: 175 },
+  { code: "pelvis", label: "Bassin", x: 150, y: 190 },
+  { code: "forearm_l", label: "Avant-bras G", x: 73, y: 205 },
+  { code: "forearm_r", label: "Avant-bras D", x: 227, y: 205 },
+  { code: "hand_l", label: "Main G", x: 68, y: 240 },
+  { code: "hand_r", label: "Main D", x: 232, y: 240 },
+  { code: "hip_l", label: "Hanche G", x: 128, y: 212 },
+  { code: "hip_r", label: "Hanche D", x: 172, y: 212 },
+  { code: "thigh_l", label: "Cuisse G", x: 128, y: 258 },
+  { code: "thigh_r", label: "Cuisse D", x: 172, y: 258 },
+  { code: "knee_l", label: "Genou G", x: 128, y: 308 },
+  { code: "knee_r", label: "Genou D", x: 172, y: 308 },
+  { code: "leg_l", label: "Jambe G", x: 128, y: 348 },
+  { code: "leg_r", label: "Jambe D", x: 172, y: 348 },
+  { code: "ankle_l", label: "Cheville/Pied G", x: 128, y: 392 },
+  { code: "ankle_r", label: "Cheville/Pied D", x: 172, y: 392 }
+];
+const BACK_REGIONS = [
+  { code: "head_back", label: "Tête (arrière)", x: 150, y: 28 },
+  { code: "neck_back", label: "Nuque", x: 150, y: 60 },
+  { code: "shoulder_l", label: "Épaule G", x: 108, y: 85 },
+  { code: "shoulder_r", label: "Épaule D", x: 192, y: 85 },
+  { code: "upper_back", label: "Rachis dorsal", x: 150, y: 120 },
+  { code: "arm_l", label: "Bras G", x: 85, y: 135 },
+  { code: "arm_r", label: "Bras D", x: 215, y: 135 },
+  { code: "lower_back", label: "Rachis lombaire", x: 150, y: 170 },
+  { code: "elbow_l", label: "Coude G", x: 78, y: 175 },
+  { code: "elbow_r", label: "Coude D", x: 222, y: 175 },
+  { code: "buttock_l", label: "Fessier G", x: 130, y: 195 },
+  { code: "buttock_r", label: "Fessier D", x: 170, y: 195 },
+  { code: "forearm_l", label: "Avant-bras G", x: 73, y: 205 },
+  { code: "forearm_r", label: "Avant-bras D", x: 227, y: 205 },
+  { code: "hand_l", label: "Main G", x: 68, y: 240 },
+  { code: "hand_r", label: "Main D", x: 232, y: 240 },
+  { code: "thigh_back_l", label: "Cuisse G (arrière)", x: 128, y: 258 },
+  { code: "thigh_back_r", label: "Cuisse D (arrière)", x: 172, y: 258 },
+  { code: "knee_back_l", label: "Genou G (arrière)", x: 128, y: 308 },
+  { code: "knee_back_r", label: "Genou D (arrière)", x: 172, y: 308 },
+  { code: "calf_l", label: "Mollet G", x: 128, y: 348 },
+  { code: "calf_r", label: "Mollet D", x: 172, y: 348 },
+  { code: "heel_l", label: "Talon/Pied G", x: 128, y: 392 },
+  { code: "heel_r", label: "Talon/Pied D", x: 172, y: 392 }
+];
+const ANNOTATION_TYPE_COLORS = { douleur: "#D97706", fracture: "#DC2626", luxation: "#7C3AED", plaie: "#DB2777", observation: "#2563EB" };
+const ANNOTATION_TYPE_LABELS = { douleur: "Douleur", fracture: "Fracture", luxation: "Luxation", plaie: "Plaie", observation: "Observation" };
+
+function generateBodyDiagramSvg(caseId, view) {
+  const regions = view === "face" ? FRONT_REGIONS : BACK_REGIONS;
+  const existing = DB.anatomical_annotations.filter(a => a.trauma_case_id === caseId && a.view === view);
+  const zones = regions.map(r => {
+    const ann = existing.find(a => a.region_code === r.code);
+    const color = ann ? ANNOTATION_TYPE_COLORS[ann.annotation_type] : "#94A3B8";
+    return `<circle cx="${r.x}" cy="${r.y}" r="9" fill="${color}" fill-opacity="${ann ? 0.9 : 0.35}" stroke="#fff" stroke-width="1.5" style="cursor:pointer" onclick="openAnnotationForm('${caseId}','${view}','${r.code}','${r.label}')"><title>${r.label}</title></circle>`;
+  }).join("");
+  const silhouette = `
+    <ellipse cx="150" cy="30" rx="18" ry="22" fill="#E2E8F0"/>
+    <rect x="120" y="55" width="60" height="140" rx="18" fill="#E2E8F0"/>
+    <rect x="60" y="65" width="30" height="150" rx="14" fill="#E2E8F0"/>
+    <rect x="210" y="65" width="30" height="150" rx="14" fill="#E2E8F0"/>
+    <rect x="118" y="190" width="30" height="150" rx="14" fill="#E2E8F0"/>
+    <rect x="152" y="190" width="30" height="150" rx="14" fill="#E2E8F0"/>`;
+  return `<svg viewBox="0 0 300 420" style="width:100%;max-width:280px;height:auto;background:var(--bg);border-radius:12px">${silhouette}${zones}</svg>`;
+}
+function switchBodyView(caseId, view) {
+  currentBodyView = view;
+  renderAnatomicalAnnotations(caseId);
+}
+function renderAnatomicalAnnotations(caseId) {
+  const box = document.getElementById("body-diagram-box");
+  if (!box) return;
+  box.innerHTML = `
+    <div class="clinic-card-actions" style="margin-bottom:10px">
+      <button class="btn ${currentBodyView === "face" ? "" : "secondary"}" onclick="switchBodyView('${caseId}','face')">Face</button>
+      <button class="btn ${currentBodyView === "dos" ? "" : "secondary"}" onclick="switchBodyView('${caseId}','dos')">Dos</button>
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+      <div>${generateBodyDiagramSvg(caseId, currentBodyView)}</div>
+      <div style="flex:1;min-width:220px">
+        <p class="sub" style="margin-bottom:8px">Cliquez sur une zone du schéma pour ajouter une annotation.</p>
+        <div id="annotation-form-box"></div>
+        <table style="margin-top:10px">
+          <thead><tr><th>Zone</th><th>Type</th><th>Diagnostic</th></tr></thead>
+          <tbody id="annotations-history-body"></tbody>
+        </table>
+      </div>
+    </div>`;
+  renderAnnotationsHistory(caseId);
+}
+function renderAnnotationsHistory(caseId) {
+  const body = document.getElementById("annotations-history-body");
+  if (!body) return;
+  const data = DB.anatomical_annotations.filter(a => a.trauma_case_id === caseId).sort((a,b) => (b.created_at||"").localeCompare(a.created_at||""));
+  body.innerHTML = data.length ? data.map(a => `
+    <tr><td style="font-size:11.5px">${a.region_label} (${a.view === "face" ? "Face" : "Dos"})</td>
+    <td><span class="badge" style="background:${ANNOTATION_TYPE_COLORS[a.annotation_type]}22;color:${ANNOTATION_TYPE_COLORS[a.annotation_type]}">${ANNOTATION_TYPE_LABELS[a.annotation_type]}</span></td>
+    <td style="font-size:11.5px">${a.diagnosis || "—"}</td></tr>`).join("")
+    : '<tr><td colspan="3" class="empty">Aucune annotation.</td></tr>';
+}
+function openAnnotationForm(caseId, view, regionCode, regionLabel) {
+  const box = document.getElementById("annotation-form-box");
+  if (!box) return;
+  box.innerHTML = `
+    <div class="panel" style="background:var(--bg);padding:12px">
+      <h4 style="font-size:13px;margin-bottom:8px">${regionLabel}</h4>
+      <select id="ann-type" style="margin-bottom:8px">
+        <option value="douleur">Douleur</option>
+        <option value="fracture">Fracture</option>
+        <option value="luxation">Luxation</option>
+        <option value="plaie">Plaie</option>
+        <option value="observation">Observation</option>
+      </select>
+      <input id="ann-diagnosis" placeholder="Diagnostic" style="margin-bottom:8px">
+      <textarea id="ann-notes" placeholder="Notes"></textarea>
+      <button class="btn secondary" style="margin-top:8px" onclick="submitAnnotation('${caseId}','${view}','${regionCode}','${regionLabel}')">Enregistrer l'annotation</button>
+    </div>`;
+}
+function submitAnnotation(caseId, view, regionCode, regionLabel) {
+  const type = val("ann-type");
+  const annotation = dbAdd("anatomical_annotations", {
+    trauma_case_id: caseId, patient_id: (DB.trauma_cases.find(c => c.id === caseId) || {}).patient_id,
+    view, region_code: regionCode, region_label: regionLabel, annotation_type: type,
+    diagnosis: val("ann-diagnosis") || null, notes: val("ann-notes") || null, created_by: currentUserName || null
+  });
+  logAudit("Annotation anatomique ajoutée", regionLabel + " — " + ANNOTATION_TYPE_LABELS[type] + " — Cas " + caseId);
+  if (type === "fracture") { document.getElementById("annotation-form-box").innerHTML = ""; openFractureForm(caseId, annotation.id, regionLabel); return; }
+  document.getElementById("annotation-form-box").innerHTML = "";
+  renderAnatomicalAnnotations(caseId);
+}
+
+// ---- Cas de traumatologie ----
+function lookupTraumaPatient() {
+  const id = document.getElementById("trm-patient-id").value.trim();
+  const info = document.getElementById("trm-patient-info");
+  const p = DB.patients.find(pp => pp.id === id);
+  if (!p) { info.textContent = "Patient introuvable."; info.style.color = "var(--red)"; currentTraumaLookupPatient = null; return; }
+  currentTraumaLookupPatient = p;
+  info.style.color = "var(--green)";
+  info.textContent = p.first_name + " " + p.last_name + (getPatientAge(p) !== null ? ", " + getPatientAge(p) + " ans" : "");
+}
+function registerTraumaCase() {
+  if (!currentTraumaLookupPatient) { alert("Recherchez d'abord un patient valide."); return; }
+  const tc = dbAdd("trauma_cases", {
+    patient_id: currentTraumaLookupPatient.id, patient_label: currentTraumaLookupPatient.first_name + " " + currentTraumaLookupPatient.last_name,
+    circumstance_type: val("trm-circ-type"), circumstance_date: document.getElementById("trm-circ-date").value || null,
+    mechanism: val("trm-circ-mechanism") || null,
+    vitals: { temperature: document.getElementById("trm-temp").value || null, blood_pressure: val("trm-bp") || null, pulse: document.getElementById("trm-pulse").value || null, spo2: document.getElementById("trm-spo2").value || null },
+    pain_score: document.getElementById("trm-pain").value || null,
+    clinical_exam: val("trm-exam") || null, neuro_deficits: val("trm-neuro") || null, functional_limitations: val("trm-functional") || null,
+    doctor_name: currentUserName || null, status: "ouvert"
+  });
+  const fee = Number(DB.clinicInfo.traumaConsultFee || 0);
+  if (fee > 0) dbAdd("invoices", { patient_id: tc.patient_id, patient_label: tc.patient_label, total_amount: fee, status: "en_attente", invoice_date: new Date().toISOString().slice(0,10), label: "Consultation traumatologie", source: "traumatologie" });
+  logAudit("Cas de traumatologie créé", "N° " + tc.id + " — " + tc.patient_label);
+  ["trm-patient-id","trm-circ-mechanism","trm-temp","trm-bp","trm-pulse","trm-spo2","trm-pain","trm-exam","trm-neuro","trm-functional"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  document.getElementById("trm-patient-info").textContent = "";
+  currentTraumaLookupPatient = null;
+  loadTraumaCasesList(); loadTraumaDashboard();
+  alert("Cas N° " + tc.id + " créé.");
+}
+function traumaCaseStatusBadge(status) {
+  const map = { ouvert: ["warn","Ouvert"], en_traitement: ["","En traitement"], suivi: ["warn","En suivi"], cloture: ["ok","Clôturé"] };
+  const m = map[status] || ["", status];
+  return `<span class="badge ${m[0]}">${m[1]}</span>`;
+}
+function loadTraumaCasesList() {
+  const body = document.getElementById("trauma-cases-body");
+  if (!body) return;
+  const data = DB.trauma_cases.filter(c => c.status !== "cloture").sort((a,b) => (b.created_at||"").localeCompare(a.created_at||""));
+  body.innerHTML = data.length ? data.map(c => `
+    <tr><td class="mono">${c.id}</td><td>${c.patient_label}</td><td>${c.circumstance_type}</td>
+    <td class="mono">${c.circumstance_date ? new Date(c.circumstance_date).toLocaleDateString("fr-FR") : "—"}</td>
+    <td>${traumaCaseStatusBadge(c.status)}</td>
+    <td><button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="openTraumaWorkspace('${c.id}')">Ouvrir</button></td></tr>`).join("")
+    : '<tr><td colspan="6" class="empty">Aucun cas enregistré.</td></tr>';
+}
+function loadTraumaDashboard() {
+  if (!document.getElementById("trm-kpi-open")) return;
+  const now = new Date();
+  const monthPrefix = now.getFullYear() + "-" + pad2(now.getMonth()+1);
+  document.getElementById("trm-kpi-open").textContent = DB.trauma_cases.filter(c => c.status !== "cloture").length;
+  document.getElementById("trm-kpi-fractures").textContent = DB.fractures.filter(f => (f.created_at||"").startsWith(monthPrefix)).length;
+  document.getElementById("trm-kpi-surgery").textContent = DB.trauma_treatments.filter(t => t.type === "chirurgie" && !t.surgery_done).length;
+  document.getElementById("trm-kpi-followups").textContent = DB.trauma_cases.filter(c => c.status === "suivi" && c.next_followup_date && c.next_followup_date <= now.toISOString().slice(0,10)).length;
+  const revenue = DB.invoices.filter(i => i.source === "traumatologie" && (i.invoice_date||"").startsWith(monthPrefix)).reduce((s,i)=>s+Number(i.paid_amount||0),0);
+  document.getElementById("trm-kpi-revenue").textContent = revenue.toLocaleString("fr-FR") + " GNF";
+}
+
+// ---- Espace de travail du cas ----
+function openTraumaWorkspace(caseId) {
+  currentTraumaCaseId = caseId;
+  currentBodyView = "face";
+  renderTraumaWorkspace(caseId);
+  document.getElementById("trauma-workspace").scrollIntoView({ behavior: "smooth" });
+}
+function renderTraumaWorkspace(caseId) {
+  const tc = DB.trauma_cases.find(x => x.id === caseId);
+  const box = document.getElementById("trauma-workspace");
+  if (!tc || !box) return;
+  box.innerHTML = `
+    <div class="panel" style="border:1.5px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin-bottom:2px">Cas N° ${tc.id} — ${tc.patient_label}</h3>
+          <p class="sub">${tc.circumstance_type} — ${traumaCaseStatusBadge(tc.status)}${tc.mechanism ? " — " + tc.mechanism : ""}</p>
+        </div>
+        <button class="btn secondary" onclick="document.getElementById('trauma-workspace').innerHTML='';currentTraumaCaseId=null;">Fermer</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Schéma anatomique interactif</h3>
+      <div id="body-diagram-box"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Fractures</h3>
+      <table>
+        <thead><tr><th>Os</th><th>Localisation</th><th>Type</th><th>Classification</th><th>Gravité</th></tr></thead>
+        <tbody id="fractures-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Imagerie</h3>
+      <button class="btn secondary" onclick="traumaRequestImaging('${caseId}')">🩻 Demander une imagerie</button>
+      <div id="trauma-img-subpanel"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Traitements</h3>
+      <div class="clinic-card-actions" style="margin-bottom:10px">
+        <button class="btn secondary" onclick="openTraumaTreatmentForm('${caseId}','platre')">🦴 Plâtre</button>
+        <button class="btn secondary" onclick="openTraumaTreatmentForm('${caseId}','attelle')">🩹 Attelle</button>
+        <button class="btn secondary" onclick="openTraumaTreatmentForm('${caseId}','chirurgie')">🔪 Chirurgie</button>
+        <button class="btn secondary" onclick="openTraumaTreatmentForm('${caseId}','reeducation')">🏃 Rééducation</button>
+        <button class="btn secondary" onclick="openTraumaTreatmentForm('${caseId}','medicament')">💊 Médicament</button>
+      </div>
+      <div id="trauma-treatment-subpanel"></div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Date</th><th>Type</th><th>Détails</th></tr></thead>
+        <tbody id="trauma-treatments-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Suivi de contrôle</h3>
+      <div class="form-row">
+        <select id="tfu-consolidation">
+          <option value="En cours">Consolidation en cours</option>
+          <option value="Partielle">Consolidation partielle</option>
+          <option value="Complète">Consolidation complète</option>
+          <option value="Retard">Retard de consolidation</option>
+        </select>
+        <input id="tfu-pain" type="number" min="0" max="10" placeholder="Douleur (0-10)">
+        <input id="tfu-mobility" placeholder="Mobilité (évaluation)">
+      </div>
+      <div class="form-row">
+        <textarea id="tfu-complications" placeholder="Complications (le cas échéant)"></textarea>
+        <input id="tfu-rehab-sessions" type="number" min="0" placeholder="Séances de rééducation effectuées">
+      </div>
+      <button class="btn secondary" onclick="submitTraumaFollowup('${caseId}')">Enregistrer le suivi</button>
+      <button class="btn" style="margin-top:8px" onclick="closeTraumaCase('${caseId}')">✅ Clôturer le cas</button>
+      <table style="margin-top:14px">
+        <thead><tr><th>Date</th><th>Consolidation</th><th>Douleur</th><th>Mobilité</th><th>Complications</th></tr></thead>
+        <tbody id="trauma-followups-body"></tbody>
+      </table>
+    </div>`;
+  renderAnatomicalAnnotations(caseId);
+  renderFracturesList(caseId);
+  renderTraumaTreatments(caseId);
+  renderTraumaFollowups(caseId);
+}
+
+// ---- Fractures ----
+const DEFAULT_AO_CLASSIFICATIONS = [
+  { system: "AO", code: "22-A1", label: "Fracture diaphysaire simple, spiroïde" },
+  { system: "AO", code: "22-B1", label: "Fracture diaphysaire à coin, spiroïde" },
+  { system: "AO", code: "22-C1", label: "Fracture diaphysaire complexe, spiroïde" },
+  { system: "AO", code: "32-A1", label: "Fracture diaphysaire fémorale simple" },
+  { system: "AO", code: "42-A1", label: "Fracture diaphysaire tibiale simple" }
+];
+function seedFractureClassificationsIfNeeded() {
+  if (DB.fractures.length) return;
+}
+function addFractureClassification() {
+  if (currentUserRole !== "fondateur") { alert("Réservé au Fondateur."); return; }
+  alert("Les classifications sont ajoutées directement lors de la saisie d'une fracture pour un cas (voir schéma anatomique → annotation Fracture).");
+}
+function loadFxcBody() {
+  const body = document.getElementById("fxc-body");
+  if (!body) return;
+  body.innerHTML = DEFAULT_AO_CLASSIFICATIONS.map(c => `<tr><td>${c.system}</td><td class="mono">${c.code}</td><td>${c.label}</td><td></td></tr>`).join("");
+}
+function openFractureForm(caseId, annotationId, regionLabel) {
+  const box = document.getElementById("annotation-form-box") || document.createElement("div");
+  box.innerHTML = `
+    <div class="panel" style="background:var(--bg);padding:12px">
+      <h4 style="font-size:13px;margin-bottom:8px">Détails de la fracture — ${regionLabel}</h4>
+      <input id="fx-bone" placeholder="Os concerné" style="margin-bottom:8px">
+      <input id="fx-location" placeholder="Localisation précise" style="margin-bottom:8px">
+      <select id="fx-type" style="margin-bottom:8px">
+        <option value="Simple">Simple</option>
+        <option value="Comminutive">Comminutive</option>
+        <option value="Ouverte">Ouverte</option>
+        <option value="Fermée">Fermée</option>
+        <option value="Spiroïde">Spiroïde</option>
+        <option value="Transverse">Transverse</option>
+      </select>
+      <select id="fx-classification" style="margin-bottom:8px">
+        <option value="">— Classification AO (optionnel) —</option>
+        ${DEFAULT_AO_CLASSIFICATIONS.map(c => `<option value="${c.code}">${c.code} — ${c.label}</option>`).join("")}
+      </select>
+      <select id="fx-severity" style="margin-bottom:8px">
+        <option value="Légère">Légère</option>
+        <option value="Modérée">Modérée</option>
+        <option value="Sévère">Sévère</option>
+      </select>
+      <button class="btn secondary" onclick="submitFracture('${caseId}','${annotationId}','${regionLabel}')">Enregistrer la fracture</button>
+    </div>`;
+}
+function submitFracture(caseId, annotationId, regionLabel) {
+  const bone = val("fx-bone");
+  if (!bone) { alert("L'os concerné est requis."); return; }
+  const cls = val("fx-classification");
+  dbAdd("fractures", {
+    trauma_case_id: caseId, patient_id: (DB.trauma_cases.find(c => c.id === caseId) || {}).patient_id, annotation_id: annotationId,
+    bone, location: val("fx-location") || regionLabel, fracture_type: val("fx-type"),
+    classification_system: "AO", classification_code: cls || null, severity: val("fx-severity")
+  });
+  logAudit("Fracture enregistrée", bone + " — " + regionLabel + " — Cas " + caseId);
+  document.getElementById("annotation-form-box").innerHTML = "";
+  renderAnatomicalAnnotations(caseId);
+  renderFracturesList(caseId);
+  loadTraumaDashboard();
+}
+function renderFracturesList(caseId) {
+  const body = document.getElementById("fractures-body");
+  if (!body) return;
+  const data = DB.fractures.filter(f => f.trauma_case_id === caseId);
+  body.innerHTML = data.length ? data.map(f => `
+    <tr><td>${f.bone}</td><td>${f.location}</td><td>${f.fracture_type}</td>
+    <td class="mono">${f.classification_code || "—"}</td><td>${f.severity}</td></tr>`).join("")
+    : '<tr><td colspan="5" class="empty">Aucune fracture enregistrée.</td></tr>';
+}
+
+// ---- Imagerie ----
+function traumaRequestImaging(caseId) {
+  const tc = DB.trauma_cases.find(x => x.id === caseId);
+  const tests = DB.lab_test_catalog.filter(t => (t.category || "Laboratoire") === "Imagerie");
+  document.getElementById("trauma-img-subpanel").innerHTML = `
+    <div class="panel" style="background:var(--bg);margin-top:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        ${tests.length ? tests.map(t => `<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;cursor:pointer"><input type="checkbox" value="${t.id}" class="trm-img-check"> ${t.name}</label>`).join("") : '<p class="sub">Aucun examen d\'imagerie au catalogue.</p>'}
+      </div>
+      <button class="btn secondary" onclick="submitTraumaImagingRequest('${caseId}')">Envoyer à l'imagerie</button>
+    </div>`;
+}
+function submitTraumaImagingRequest(caseId) {
+  const tc = DB.trauma_cases.find(x => x.id === caseId);
+  const checked = Array.from(document.querySelectorAll(".trm-img-check:checked")).map(c => c.value);
+  if (!checked.length) { alert("Cochez au moins un examen."); return; }
+  checked.forEach(test_id => {
+    const test = DB.lab_test_catalog.find(t => t.id === test_id);
+    const request = dbAdd("imaging_requests", {
+      patient_id: tc.patient_id, patient_label: tc.patient_label, doctor_name: tc.doctor_name, service_name: "Traumatologie",
+      exam_type: test ? test.name : test_id, priority: "Normal", requested_at: new Date().toISOString(),
+      requested_by: currentUserName || null, trauma_case_id: caseId, status: "attente"
+    });
+    logAudit("Demande imagerie (traumatologie)", "N° " + request.id + " — Cas " + caseId);
+  });
+  alert(checked.length + " demande(s) d'imagerie envoyée(s).");
+  document.getElementById("trauma-img-subpanel").innerHTML = "";
+}
+
+// ---- Traitements ----
+const TRAUMA_TREATMENT_LABELS = { platre: "Plâtre", attelle: "Attelle", chirurgie: "Chirurgie", reeducation: "Rééducation", medicament: "Médicament" };
+function openTraumaTreatmentForm(caseId, type) {
+  const box = document.getElementById("trauma-treatment-subpanel");
+  if (type === "chirurgie") {
+    box.innerHTML = `
+      <div class="panel" style="background:var(--bg)">
+        <h4 style="font-size:13px;margin-bottom:8px">Chirurgie indiquée</h4>
+        <input id="tx-surg-type" placeholder="Type d'intervention" style="margin-bottom:8px">
+        <input id="tx-surg-surgeon" placeholder="Chirurgien" value="${currentUserName || ""}" style="margin-bottom:8px">
+        <button class="btn secondary" onclick="submitTraumaSurgery('${caseId}')">Créer la demande au bloc opératoire</button>
+      </div>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="panel" style="background:var(--bg)">
+      <h4 style="font-size:13px;margin-bottom:8px">${TRAUMA_TREATMENT_LABELS[type]}</h4>
+      <textarea id="tx-details" placeholder="Détails du traitement"></textarea>
+      <button class="btn secondary" style="margin-top:8px" onclick="submitTraumaTreatment('${caseId}','${type}')">Enregistrer</button>
+    </div>`;
+}
+function submitTraumaTreatment(caseId, type) {
+  const details = val("tx-details");
+  if (!details) { alert("Détaillez le traitement."); return; }
+  dbAdd("trauma_treatments", { trauma_case_id: caseId, patient_id: (DB.trauma_cases.find(c => c.id === caseId) || {}).patient_id, type, details, prescribed_at: new Date().toISOString(), prescribed_by: currentUserName || null });
+  const tc = DB.trauma_cases.find(c => c.id === caseId);
+  if (tc && tc.status === "ouvert") { tc.status = "en_traitement"; dbUpdate("trauma_cases", tc); }
+  logAudit("Traitement traumatologie prescrit", TRAUMA_TREATMENT_LABELS[type] + " — Cas " + caseId);
+  document.getElementById("trauma-treatment-subpanel").innerHTML = "";
+  renderTraumaTreatments(caseId);
+  loadTraumaCasesList();
+}
+function submitTraumaSurgery(caseId) {
+  const tc = DB.trauma_cases.find(x => x.id === caseId);
+  const type = val("tx-surg-type");
+  const surgeon = val("tx-surg-surgeon");
+  if (!type || !surgeon) { alert("Type d'intervention et chirurgien sont requis."); return; }
+  const req = dbAdd("surgical_requests", {
+    patient_id: tc.patient_id, patient_label: tc.patient_label, diagnosis: tc.clinical_exam || "Traumatisme",
+    intervention_type: type, urgency: "Normal", surgeon_name: surgeon, service_name: "Traumatologie",
+    desired_date: new Date().toISOString().slice(0,10), requested_by: currentUserName || null, requested_at: new Date().toISOString(),
+    status: "demande", checklist: { preop_exams: false, imaging: false, consent: false, room: false, team: false, supplies: false }
+  });
+  dbAdd("trauma_treatments", { trauma_case_id: caseId, patient_id: tc.patient_id, type: "chirurgie", details: type + " — " + surgeon, prescribed_at: new Date().toISOString(), prescribed_by: currentUserName || null, surgical_request_id: req.id });
+  tc.status = "en_traitement"; dbUpdate("trauma_cases", tc);
+  logAudit("Demande chirurgicale créée depuis traumatologie", "N° " + req.id + " — Cas " + caseId);
+  document.getElementById("trauma-treatment-subpanel").innerHTML = "";
+  renderTraumaTreatments(caseId);
+  alert("Demande d'intervention N° " + req.id + " envoyée au bloc opératoire.");
+}
+function renderTraumaTreatments(caseId) {
+  const body = document.getElementById("trauma-treatments-body");
+  if (!body) return;
+  const data = DB.trauma_treatments.filter(t => t.trauma_case_id === caseId).sort((a,b) => (b.prescribed_at||"").localeCompare(a.prescribed_at||""));
+  body.innerHTML = data.length ? data.map(t => `
+    <tr><td class="mono">${new Date(t.prescribed_at).toLocaleDateString("fr-FR")}</td><td>${TRAUMA_TREATMENT_LABELS[t.type] || t.type}</td><td style="font-size:11.5px">${t.details}</td></tr>`).join("")
+    : '<tr><td colspan="3" class="empty">Aucun traitement enregistré.</td></tr>';
+}
+
+// ---- Suivi de contrôle ----
+function submitTraumaFollowup(caseId) {
+  const tc = DB.trauma_cases.find(x => x.id === caseId);
+  if (!tc) return;
+  dbAdd("trauma_followups", {
+    trauma_case_id: caseId, patient_id: tc.patient_id, visit_date: new Date().toISOString().slice(0,10),
+    consolidation_status: val("tfu-consolidation"), pain_score: document.getElementById("tfu-pain").value || null,
+    mobility_assessment: val("tfu-mobility") || null, complications: val("tfu-complications") || null,
+    rehab_sessions_done: document.getElementById("tfu-rehab-sessions").value || null, doctor_name: currentUserName || null
+  });
+  if (tc.status !== "suivi") { tc.status = "suivi"; dbUpdate("trauma_cases", tc); }
+  logAudit("Suivi de contrôle traumatologie enregistré", "Cas " + caseId);
+  ["tfu-pain","tfu-mobility","tfu-complications","tfu-rehab-sessions"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  renderTraumaFollowups(caseId);
+  loadTraumaCasesList();
+}
+function renderTraumaFollowups(caseId) {
+  const body = document.getElementById("trauma-followups-body");
+  if (!body) return;
+  const data = DB.trauma_followups.filter(f => f.trauma_case_id === caseId).sort((a,b) => (b.visit_date||"").localeCompare(a.visit_date||""));
+  body.innerHTML = data.length ? data.map(f => `
+    <tr><td class="mono">${f.visit_date}</td><td>${f.consolidation_status}</td><td class="mono">${f.pain_score || "—"}/10</td>
+    <td style="font-size:11.5px">${f.mobility_assessment || "—"}</td><td style="font-size:11.5px">${f.complications || "—"}</td></tr>`).join("")
+    : '<tr><td colspan="5" class="empty">Aucun suivi enregistré.</td></tr>';
+}
+function closeTraumaCase(caseId) {
+  const tc = DB.trauma_cases.find(x => x.id === caseId);
+  if (!tc) return;
+  if (!confirm("Clôturer ce cas de traumatologie ?")) return;
+  tc.status = "cloture";
+  dbUpdate("trauma_cases", tc);
+  logAudit("Cas de traumatologie clôturé", "N° " + caseId);
+  document.getElementById("trauma-workspace").innerHTML = "";
+  currentTraumaCaseId = null;
+  loadTraumaCasesList(); loadTraumaDashboard();
+}
+
+// ---- Rapports ----
+function generateTraumaReport() {
+  const from = document.getElementById("trm-report-from").value;
+  const to = document.getElementById("trm-report-to").value;
+  const cases = DB.trauma_cases.filter(c => {
+    const d = (c.created_at||"").slice(0,10);
+    return (!from || d >= from) && (!to || d <= to);
+  });
+  const byCirc = {};
+  cases.forEach(c => { byCirc[c.circumstance_type] = (byCirc[c.circumstance_type]||0) + 1; });
+  const fractures = DB.fractures.filter(f => cases.some(c => c.id === f.trauma_case_id));
+  const surgeries = DB.trauma_treatments.filter(t => t.type === "chirurgie" && cases.some(c => c.id === t.trauma_case_id));
+  const revenue = DB.invoices.filter(i => i.source === "traumatologie" && (!from || (i.invoice_date||"")>=from) && (!to || (i.invoice_date||"")<=to)).reduce((s,i)=>s+Number(i.paid_amount||0),0);
+
+  document.getElementById("trm-report-output").innerHTML = `
+    <div id="trm-report-printable">
+      <div class="kpi-grid" style="margin-bottom:14px">
+        <div class="kpi-card blue"><div class="kpi-label">Cas</div><div class="kpi-value">${cases.length}</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">Fractures</div><div class="kpi-value">${fractures.length}</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Interventions</div><div class="kpi-value">${surgeries.length}</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Recettes</div><div class="kpi-value">${revenue.toLocaleString("fr-FR")} GNF</div></div>
+      </div>
+      <h3 style="font-size:14px;margin-bottom:8px">Répartition par circonstance (accidents)</h3>
+      <table><thead><tr><th>Circonstance</th><th>Nombre</th></tr></thead><tbody>
+      ${Object.keys(byCirc).sort((a,b)=>byCirc[b]-byCirc[a]).map(k => `<tr><td>${k}</td><td>${byCirc[k]}</td></tr>`).join("") || '<tr><td colspan="2" class="empty">Aucune donnée.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+function printTraumaReport() {
+  const content = document.getElementById("trm-report-printable");
+  if (!content) { alert("Générez d'abord un rapport."); return; }
+  openPrintWindow("Rapport Traumatologie", `<h2>Rapport Traumatologie &amp; Orthopédie</h2><p>${CLINIC_NAME} — ${new Date().toLocaleDateString("fr-FR")}</p>${content.outerHTML}`);
+}
+
+
+// ============================================================
+// ORL (OTO-RHINO-LARYNGOLOGIE)
+// ============================================================
+let currentOrlPatientId = null;
+const ORL_SYMPTOMS = { pain: "Douleur", fever: "Fièvre", hearing_loss: "Perte d'audition", vertigo: "Vertiges", tinnitus: "Acouphènes", nasal_obstruction: "Obstruction nasale", rhinorrhea: "Rhinorrhée", epistaxis: "Épistaxis", dysphonia: "Dysphonie", dysphagia: "Dysphagie" };
+const ORL_EXAM_TYPES = { otoscopie: "Otoscopie", audiometrie: "Audiométrie", tympanometrie: "Tympanométrie", fibroscopie_nasale: "Fibroscopie nasale", laryngoscopie: "Laryngoscopie", endoscopie_orl: "Endoscopie ORL", vestibulometrie: "Vestibulométrie" };
+const ORL_TREATMENT_TYPES = { medicament: "Médicament", lavage_auriculaire: "Lavage auriculaire", ablation_corps_etranger: "Ablation de corps étranger", drain_transtympanique: "Drain transtympanique", biopsie: "Biopsie" };
+
+function openOrlWorkspace(patientId) {
+  const errEl = document.getElementById("orl-patient-error");
+  errEl.textContent = "";
+  const p = DB.patients.find(pp => pp.id === patientId);
+  if (!p) { errEl.textContent = "Patient introuvable."; errEl.style.color = "var(--red)"; return; }
+  currentOrlPatientId = patientId;
+  renderOrlWorkspace(patientId);
+  document.getElementById("orl-workspace").scrollIntoView({ behavior: "smooth" });
+}
+function renderOrlWorkspace(patientId) {
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const box = document.getElementById("orl-workspace");
+  if (!p || !box) return;
+  const lastConsult = DB.orl_consultations.filter(c => c.patient_id === patientId).sort((a,b) => (b.visit_date||"").localeCompare(a.visit_date||""))[0] || {};
+  box.innerHTML = `
+    <div class="panel" style="border:1.5px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin-bottom:2px">${p.first_name} ${p.last_name} — N° dossier ${p.id}</h3>
+          <p class="sub">${p.sexe === "M" ? "Masculin" : "Féminin"}${getPatientAge(p) !== null ? ", " + getPatientAge(p) + " ans" : ""}${p.allergies ? " — ⚠️ Allergies : " + p.allergies : ""}</p>
+        </div>
+        <button class="btn secondary" onclick="document.getElementById('orl-workspace').innerHTML='';currentOrlPatientId=null;">Fermer</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Consultation ORL</h3>
+      <div class="form-row"><textarea id="orl-reason" placeholder="Motif de consultation"></textarea></div>
+      <div class="form-row">
+        <textarea id="orl-antecedents" placeholder="Antécédents ORL"></textarea>
+        <textarea id="orl-surgical-antecedents" placeholder="Antécédents chirurgicaux"></textarea>
+      </div>
+      <div class="form-row"><input id="orl-allergies" placeholder="Allergies" value="${p.allergies || ""}"></div>
+      <p class="concepteur-section-title" style="margin-top:0">Symptômes</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        ${Object.keys(ORL_SYMPTOMS).map(k => `<label style="display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;cursor:pointer"><input type="checkbox" class="orl-symptom-check" value="${k}"> ${ORL_SYMPTOMS[k]}</label>`).join("")}
+      </div>
+      <p class="concepteur-section-title">Examen clinique structuré</p>
+      <div class="form-row">
+        <input id="orl-exam-ear" placeholder="Oreille">
+        <input id="orl-exam-nose" placeholder="Nez">
+      </div>
+      <div class="form-row">
+        <input id="orl-exam-throat" placeholder="Gorge">
+        <input id="orl-exam-larynx" placeholder="Larynx">
+      </div>
+      <div class="form-row"><input id="orl-exam-neck" placeholder="Cou"></div>
+      <div class="form-row">
+        <select id="orl-icd"><option value="">— Diagnostic principal (CIM-10) —</option></select>
+        <input id="orl-diag-secondary" placeholder="Diagnostics secondaires (optionnel)">
+      </div>
+      <div class="form-row"><input id="orl-followup" type="date" placeholder="RDV de contrôle"></div>
+      <button class="btn" onclick="submitOrlConsultation('${patientId}')">Enregistrer la consultation</button>
+      <table style="margin-top:14px">
+        <thead><tr><th>Date</th><th>Motif</th><th>Diagnostic</th><th>Médecin</th></tr></thead>
+        <tbody id="orl-consult-history-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Examens spécialisés</h3>
+      <div class="clinic-card-actions" style="margin-bottom:10px">
+        ${Object.keys(ORL_EXAM_TYPES).map(k => `<button class="btn secondary" onclick="openOrlExamForm('${patientId}','${k}')">${ORL_EXAM_TYPES[k]}</button>`).join("")}
+      </div>
+      <div id="orl-exam-subpanel"></div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Date</th><th>Type</th><th>Résultat</th><th>Média</th></tr></thead>
+        <tbody id="orl-exams-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Demandes labo / imagerie</h3>
+      <div class="clinic-card-actions">
+        <button class="btn secondary" onclick="orlRequestLab('${patientId}')">🔬 Examen labo</button>
+        <button class="btn secondary" onclick="orlRequestImaging('${patientId}')">🩻 Imagerie</button>
+      </div>
+      <div id="orl-labimg-subpanel"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Traitements</h3>
+      <div class="clinic-card-actions" style="margin-bottom:10px">
+        ${Object.keys(ORL_TREATMENT_TYPES).map(k => `<button class="btn secondary" onclick="openOrlTreatmentForm('${patientId}','${k}')">${ORL_TREATMENT_TYPES[k]}</button>`).join("")}
+        <button class="btn secondary" style="background:var(--red);color:#fff" onclick="orlReferToSurgery('${patientId}')">🔪 Orientation Bloc Opératoire</button>
+      </div>
+      <div id="orl-treatment-subpanel"></div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Date</th><th>Type</th><th>Détails</th></tr></thead>
+        <tbody id="orl-treatments-body"></tbody>
+      </table>
+    </div>`;
+  populateOrlIcdSelect();
+  renderOrlConsultHistory(patientId);
+  renderOrlExams(patientId);
+  renderOrlTreatments(patientId);
+}
+function populateOrlIcdSelect() {
+  const sel = document.getElementById("orl-icd");
+  if (!sel) return;
+  seedIcdCatalogIfNeeded();
+  sel.innerHTML = '<option value="">— Diagnostic principal (CIM-10) —</option>' + DB.icd_catalog.map(c => `<option value="${c.id}">${c.code} — ${c.label}</option>`).join("");
+}
+function submitOrlConsultation(patientId) {
+  const symptoms = {};
+  document.querySelectorAll(".orl-symptom-check").forEach(cb => { symptoms[cb.value] = cb.checked; });
+  const icd = DB.icd_catalog.find(c => c.id === val("orl-icd"));
+  const p = DB.patients.find(pp => pp.id === patientId);
+  dbAdd("orl_consultations", {
+    patient_id: patientId, visit_date: new Date().toISOString().slice(0,10),
+    reason: val("orl-reason") || null, orl_antecedents: val("orl-antecedents") || null, surgical_antecedents: val("orl-surgical-antecedents") || null,
+    allergies: val("orl-allergies") || null, symptoms,
+    exam: { ear: val("orl-exam-ear") || null, nose: val("orl-exam-nose") || null, throat: val("orl-exam-throat") || null, larynx: val("orl-exam-larynx") || null, neck: val("orl-exam-neck") || null },
+    diagnosis_icd_code: icd ? icd.code : null, diagnosis_icd_label: icd ? icd.label : null,
+    diagnosis_secondary: val("orl-diag-secondary") || null, followup_date: document.getElementById("orl-followup").value || null,
+    doctor_name: currentUserName || null
+  });
+  const fee = Number(DB.clinicInfo.orlConsultFee || 0);
+  if (fee > 0) dbAdd("invoices", { patient_id: patientId, patient_label: p.first_name + " " + p.last_name, total_amount: fee, status: "en_attente", invoice_date: new Date().toISOString().slice(0,10), label: "Consultation ORL", source: "orl" });
+  if (document.getElementById("orl-followup").value) dbAdd("appointments", { patient_id: patientId, appointment_date: document.getElementById("orl-followup").value, start_time: "09:00", end_time: "09:30", reason: "Contrôle ORL", status: "planifie" });
+  logAudit("Consultation ORL enregistrée", "Patient " + patientId);
+  renderOrlConsultHistory(patientId);
+  alert("Consultation ORL enregistrée dans le dossier médical.");
+}
+function renderOrlConsultHistory(patientId) {
+  const body = document.getElementById("orl-consult-history-body");
+  if (!body) return;
+  const data = DB.orl_consultations.filter(c => c.patient_id === patientId).sort((a,b) => (b.visit_date||"").localeCompare(a.visit_date||""));
+  body.innerHTML = data.length ? data.map(c => `<tr><td class="mono">${c.visit_date}</td><td>${c.reason || "—"}</td><td>${c.diagnosis_icd_label || "—"}</td><td>${c.doctor_name || "—"}</td></tr>`).join("")
+    : '<tr><td colspan="4" class="empty">Aucune consultation enregistrée.</td></tr>';
+}
+
+// ---- Examens spécialisés (avec archivage média) ----
+function openOrlExamForm(patientId, type) {
+  document.getElementById("orl-exam-subpanel").innerHTML = `
+    <div class="panel" style="background:var(--bg)">
+      <h4 style="font-size:13px;margin-bottom:8px">${ORL_EXAM_TYPES[type]}</h4>
+      <textarea id="orl-exam-findings" placeholder="Résultats / observations"></textarea>
+      <div class="form-row" style="margin-top:8px">
+        <input id="orl-exam-file" type="file" accept="image/*,video/*,.pdf">
+      </div>
+      <button class="btn secondary" style="margin-top:8px" onclick="submitOrlExam('${patientId}','${type}')">Enregistrer l'examen</button>
+    </div>`;
+}
+async function submitOrlExam(patientId, type) {
+  const findings = val("orl-exam-findings");
+  if (!findings) { alert("Renseignez les résultats de l'examen."); return; }
+  const fileInput = document.getElementById("orl-exam-file");
+  let media = null;
+  if (fileInput.files && fileInput.files[0]) {
+    if (fileInput.files[0].size > 6 * 1024 * 1024) { alert("Fichier trop volumineux (max 6 Mo)."); return; }
+    media = { filename: fileInput.files[0].name, data_url: await readFileAsDataURL(fileInput), uploaded_at: new Date().toISOString() };
+  }
+  dbAdd("orl_exams", { patient_id: patientId, type, findings, media_files: media ? [media] : [], performed_by: currentUserName || null, performed_at: new Date().toISOString() });
+  if (media) dbAdd("documents", { patient_id: patientId, doc_type: "Examen ORL — " + ORL_EXAM_TYPES[type], filename: media.filename, file_data: media.data_url, uploaded_at: media.uploaded_at });
+  logAudit("Examen ORL réalisé", ORL_EXAM_TYPES[type] + " — Patient " + patientId);
+  document.getElementById("orl-exam-subpanel").innerHTML = "";
+  renderOrlExams(patientId);
+}
+function renderOrlExams(patientId) {
+  const body = document.getElementById("orl-exams-body");
+  if (!body) return;
+  const data = DB.orl_exams.filter(e => e.patient_id === patientId).sort((a,b) => (b.performed_at||"").localeCompare(a.performed_at||""));
+  body.innerHTML = data.length ? data.map(e => `
+    <tr><td class="mono">${new Date(e.performed_at).toLocaleDateString("fr-FR")}</td><td>${ORL_EXAM_TYPES[e.type] || e.type}</td>
+    <td style="font-size:11.5px">${e.findings}</td><td>${(e.media_files||[]).length ? "📎 " + e.media_files.length : "—"}</td></tr>`).join("")
+    : '<tr><td colspan="4" class="empty">Aucun examen enregistré.</td></tr>';
+}
+
+// ---- Labo / imagerie ----
+function orlRequestLab(patientId) {
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const tests = DB.lab_test_catalog.filter(t => (t.category || "Laboratoire") === "Laboratoire");
+  document.getElementById("orl-labimg-subpanel").innerHTML = `
+    <div class="panel" style="background:var(--bg);margin-top:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        ${tests.map(t => `<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;cursor:pointer"><input type="checkbox" value="${t.id}" class="orl-lab-check"> ${t.name}</label>`).join("") || '<p class="sub">Aucun examen au catalogue.</p>'}
+      </div>
+      <button class="btn secondary" onclick="submitOrlLabRequest('${patientId}')">Envoyer au laboratoire</button>
+    </div>`;
+}
+function submitOrlLabRequest(patientId) {
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const checked = Array.from(document.querySelectorAll(".orl-lab-check:checked")).map(c => c.value);
+  if (!checked.length) { alert("Cochez au moins un examen."); return; }
+  const testNames = checked.map(id => { const t = DB.lab_test_catalog.find(x => x.id === id); return t ? t.name : id; });
+  const request = dbAdd("lab_requests", { patient_id: patientId, patient_label: p.first_name + " " + p.last_name, doctor_name: currentUserName, service_name: "ORL", category: "Laboratoire", priority: "Normal", test_names: testNames, requested_at: new Date().toISOString(), requested_by: currentUserName || null, status: "attente" });
+  checked.forEach(test_id => dbAdd("lab_results", { patient_id: patientId, test_id, request_id: request.id, result_value: "", flag: null, notes: null, reference_used: null, result_date: new Date().toISOString() }));
+  logAudit("Demande labo (ORL)", "N° " + request.id);
+  alert("Demande N° " + request.id + " envoyée au laboratoire.");
+  document.getElementById("orl-labimg-subpanel").innerHTML = "";
+}
+function orlRequestImaging(patientId) {
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const tests = DB.lab_test_catalog.filter(t => (t.category || "Laboratoire") === "Imagerie");
+  document.getElementById("orl-labimg-subpanel").innerHTML = `
+    <div class="panel" style="background:var(--bg);margin-top:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        ${tests.map(t => `<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;cursor:pointer"><input type="checkbox" value="${t.id}" class="orl-img-check"> ${t.name}</label>`).join("") || '<p class="sub">Aucun examen au catalogue.</p>'}
+      </div>
+      <button class="btn secondary" onclick="submitOrlImagingRequest('${patientId}')">Envoyer à l'imagerie</button>
+    </div>`;
+}
+function submitOrlImagingRequest(patientId) {
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const checked = Array.from(document.querySelectorAll(".orl-img-check:checked")).map(c => c.value);
+  if (!checked.length) { alert("Cochez au moins un examen."); return; }
+  checked.forEach(test_id => {
+    const test = DB.lab_test_catalog.find(t => t.id === test_id);
+    const request = dbAdd("imaging_requests", { patient_id: patientId, patient_label: p.first_name + " " + p.last_name, doctor_name: currentUserName, service_name: "ORL", exam_type: test ? test.name : test_id, priority: "Normal", requested_at: new Date().toISOString(), requested_by: currentUserName || null, status: "attente" });
+    logAudit("Demande imagerie (ORL)", "N° " + request.id);
+  });
+  alert(checked.length + " demande(s) d'imagerie envoyée(s).");
+  document.getElementById("orl-labimg-subpanel").innerHTML = "";
+}
+
+// ---- Traitements ----
+function openOrlTreatmentForm(patientId, type) {
+  document.getElementById("orl-treatment-subpanel").innerHTML = `
+    <div class="panel" style="background:var(--bg)">
+      <h4 style="font-size:13px;margin-bottom:8px">${ORL_TREATMENT_TYPES[type]}</h4>
+      <textarea id="orl-tx-details" placeholder="Détails du traitement"></textarea>
+      <button class="btn secondary" style="margin-top:8px" onclick="submitOrlTreatment('${patientId}','${type}')">Enregistrer</button>
+    </div>`;
+}
+function submitOrlTreatment(patientId, type) {
+  const details = val("orl-tx-details");
+  if (!details) { alert("Détaillez le traitement."); return; }
+  dbAdd("orl_treatments", { patient_id: patientId, type, details, prescribed_by: currentUserName || null, prescribed_at: new Date().toISOString() });
+  logAudit("Traitement ORL enregistré", ORL_TREATMENT_TYPES[type] + " — Patient " + patientId);
+  document.getElementById("orl-treatment-subpanel").innerHTML = "";
+  renderOrlTreatments(patientId);
+}
+function renderOrlTreatments(patientId) {
+  const body = document.getElementById("orl-treatments-body");
+  if (!body) return;
+  const data = DB.orl_treatments.filter(t => t.patient_id === patientId).sort((a,b) => (b.prescribed_at||"").localeCompare(a.prescribed_at||""));
+  body.innerHTML = data.length ? data.map(t => `<tr><td class="mono">${new Date(t.prescribed_at).toLocaleDateString("fr-FR")}</td><td>${ORL_TREATMENT_TYPES[t.type] || t.type}</td><td style="font-size:11.5px">${t.details}</td></tr>`).join("")
+    : '<tr><td colspan="3" class="empty">Aucun traitement enregistré.</td></tr>';
+}
+function orlReferToSurgery(patientId) {
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const type = prompt("Type d'intervention ORL :");
+  if (!type) return;
+  const surgeon = prompt("Chirurgien responsable :", currentUserName || "");
+  if (!surgeon) return;
+  const req = dbAdd("surgical_requests", {
+    patient_id: patientId, patient_label: p.first_name + " " + p.last_name,
+    diagnosis: (DB.orl_consultations.filter(c=>c.patient_id===patientId).slice(-1)[0]||{}).diagnosis_icd_label || "Pathologie ORL",
+    intervention_type: type, urgency: "Normal", surgeon_name: surgeon, service_name: "ORL",
+    desired_date: new Date().toISOString().slice(0,10), requested_by: currentUserName || null, requested_at: new Date().toISOString(),
+    status: "demande", checklist: { preop_exams: false, imaging: false, consent: false, room: false, team: false, supplies: false }
+  });
+  logAudit("Orientation bloc opératoire (ORL)", "N° " + req.id + " — Patient " + patientId);
+  alert("Demande d'intervention N° " + req.id + " envoyée au bloc opératoire.");
+}
+
+// ---- Tableau de bord & rapports ----
+function loadOrlDashboard() {
+  if (!document.getElementById("orl-kpi-consults")) return;
+  const now = new Date();
+  const monthPrefix = now.getFullYear() + "-" + pad2(now.getMonth()+1);
+  document.getElementById("orl-kpi-consults").textContent = DB.orl_consultations.filter(c => (c.visit_date||"").startsWith(monthPrefix)).length;
+  document.getElementById("orl-kpi-exams").textContent = DB.orl_exams.filter(e => (e.performed_at||"").startsWith(monthPrefix)).length;
+  document.getElementById("orl-kpi-surgery").textContent = DB.surgical_requests.filter(s => s.service_name === "ORL").length;
+  const revenue = DB.invoices.filter(i => i.source === "orl" && (i.invoice_date||"").startsWith(monthPrefix)).reduce((s,i)=>s+Number(i.paid_amount||0),0);
+  document.getElementById("orl-kpi-revenue").textContent = revenue.toLocaleString("fr-FR") + " GNF";
+}
+function generateOrlReport() {
+  const from = document.getElementById("orl-report-from").value;
+  const to = document.getElementById("orl-report-to").value;
+  const consults = DB.orl_consultations.filter(c => (!from || c.visit_date >= from) && (!to || c.visit_date <= to));
+  const byDiag = {};
+  consults.forEach(c => { const d = c.diagnosis_icd_label || "Non précisé"; byDiag[d] = (byDiag[d]||0)+1; });
+  const surgeries = DB.surgical_requests.filter(s => s.service_name === "ORL" && (!from || (s.requested_at||"")>=from) && (!to || (s.requested_at||"")<=to));
+  const exams = DB.orl_exams.filter(e => (!from || e.performed_at>=from) && (!to || e.performed_at<=to));
+  const revenue = DB.invoices.filter(i => i.source === "orl" && (!from || (i.invoice_date||"")>=from) && (!to || (i.invoice_date||"")<=to)).reduce((s,i)=>s+Number(i.paid_amount||0),0);
+  document.getElementById("orl-report-output").innerHTML = `
+    <div id="orl-report-printable">
+      <div class="kpi-grid" style="margin-bottom:14px">
+        <div class="kpi-card blue"><div class="kpi-label">Consultations</div><div class="kpi-value">${consults.length}</div></div>
+        <div class="kpi-card amber"><div class="kpi-label">Examens réalisés</div><div class="kpi-value">${exams.length}</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Chirurgies ORL</div><div class="kpi-value">${surgeries.length}</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Recettes</div><div class="kpi-value">${revenue.toLocaleString("fr-FR")} GNF</div></div>
+      </div>
+      <h3 style="font-size:14px;margin-bottom:8px">Principales pathologies</h3>
+      <table><thead><tr><th>Diagnostic</th><th>Nombre</th></tr></thead><tbody>
+      ${Object.keys(byDiag).sort((a,b)=>byDiag[b]-byDiag[a]).slice(0,10).map(k => `<tr><td>${k}</td><td>${byDiag[k]}</td></tr>`).join("") || '<tr><td colspan="2" class="empty">Aucune donnée.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+function printOrlReport() {
+  const content = document.getElementById("orl-report-printable");
+  if (!content) { alert("Générez d'abord un rapport."); return; }
+  openPrintWindow("Rapport ORL", `<h2>Rapport ORL</h2><p>${CLINIC_NAME} — ${new Date().toLocaleDateString("fr-FR")}</p>${content.outerHTML}`);
+}
+
+
+// ============================================================
+// CABINET DENTAIRE (ODONTOLOGIE)
+// ============================================================
+let currentDentalPatientId = null;
+let currentOdontoDentition = "adulte";
+const ADULT_TEETH = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28, 48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
+const CHILD_TEETH = [55,54,53,52,51, 61,62,63,64,65, 85,84,83,82,81, 71,72,73,74,75];
+const DENTAL_ACT_TYPES = { detartrage: "Détartrage", obturation: "Obturation", endodontie: "Traitement endodontique", extraction_simple: "Extraction simple", extraction_chirurgicale: "Extraction chirurgicale", couronne: "Couronne", bridge: "Bridge", implant: "Implant", orthodontie: "Orthodontie", prothese: "Prothèse", blanchiment: "Blanchiment", chirurgie_buccale: "Chirurgie buccale" };
+
+function openDentalWorkspace(patientId) {
+  const errEl = document.getElementById("dent-patient-error");
+  errEl.textContent = "";
+  const p = DB.patients.find(pp => pp.id === patientId);
+  if (!p) { errEl.textContent = "Patient introuvable."; errEl.style.color = "var(--red)"; return; }
+  currentDentalPatientId = patientId;
+  currentOdontoDentition = (getPatientAge(p) !== null && getPatientAge(p) < 12) ? "enfant" : "adulte";
+  renderDentalWorkspace(patientId);
+  document.getElementById("dental-workspace").scrollIntoView({ behavior: "smooth" });
+}
+function renderDentalWorkspace(patientId) {
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const box = document.getElementById("dental-workspace");
+  if (!p || !box) return;
+  box.innerHTML = `
+    <div class="panel" style="border:1.5px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin-bottom:2px">${p.first_name} ${p.last_name} — N° dossier ${p.id}</h3>
+          <p class="sub">${p.sexe === "M" ? "Masculin" : "Féminin"}${getPatientAge(p) !== null ? ", " + getPatientAge(p) + " ans" : ""}${p.allergies ? " — ⚠️ Allergies : " + p.allergies : ""}</p>
+        </div>
+        <button class="btn secondary" onclick="document.getElementById('dental-workspace').innerHTML='';currentDentalPatientId=null;">Fermer</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Consultation dentaire</h3>
+      <div class="form-row"><textarea id="dent-reason" placeholder="Motif de consultation"></textarea></div>
+      <div class="form-row">
+        <textarea id="dent-medical-antecedents" placeholder="Antécédents médicaux"></textarea>
+        <textarea id="dent-dental-antecedents" placeholder="Antécédents dentaires"></textarea>
+      </div>
+      <div class="form-row">
+        <input id="dent-allergies" placeholder="Allergies" value="${p.allergies || ""}">
+        <select id="dent-hygiene">
+          <option value="Bonne">Hygiène bucco-dentaire : Bonne</option>
+          <option value="Moyenne">Moyenne</option>
+          <option value="Mauvaise">Mauvaise</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <input id="dent-exam-teeth" placeholder="Examen des dents">
+        <input id="dent-exam-gums" placeholder="Gencives">
+      </div>
+      <div class="form-row">
+        <input id="dent-exam-tongue" placeholder="Langue">
+        <input id="dent-exam-mucosa" placeholder="Muqueuses">
+        <input id="dent-exam-occlusion" placeholder="Occlusion">
+      </div>
+      <div class="form-row"><select id="dent-icd"><option value="">— Diagnostic (CIM-10, optionnel) —</option></select></div>
+      <button class="btn secondary" onclick="submitDentalConsultation('${patientId}')">Enregistrer la consultation</button>
+      <table style="margin-top:14px">
+        <thead><tr><th>Date</th><th>Motif</th><th>Diagnostic</th><th>Praticien</th></tr></thead>
+        <tbody id="dent-consult-history-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Odontogramme (numérotation FDI)</h3>
+      <div class="clinic-card-actions" style="margin-bottom:10px">
+        <button class="btn ${currentOdontoDentition === "adulte" ? "" : "secondary"}" onclick="switchDentition('${patientId}','adulte')">Adulte (32 dents)</button>
+        <button class="btn ${currentOdontoDentition === "enfant" ? "" : "secondary"}" onclick="switchDentition('${patientId}','enfant')">Enfant (20 dents)</button>
+      </div>
+      <div id="odontogram-box"></div>
+      <div id="tooth-act-form"></div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Dent</th><th>Acte</th><th>Statut</th><th>Date</th></tr></thead>
+        <tbody id="dental-acts-history-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Imagerie dentaire</h3>
+      <div class="form-row">
+        <select id="dimg-type">
+          <option value="retro_alveolaire">Radiographie rétro-alvéolaire</option>
+          <option value="panoramique">Radiographie panoramique</option>
+          <option value="cbct">CBCT</option>
+        </select>
+        <input id="dimg-file" type="file" accept="image/*,.pdf">
+        <button class="btn secondary" onclick="submitDentalImaging('${patientId}')">Archiver dans le DME</button>
+      </div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Date</th><th>Type</th><th>Fichier</th></tr></thead>
+        <tbody id="dental-imaging-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Plan de traitement &amp; devis</h3>
+      <div class="form-row">
+        <input id="dplan-label" placeholder="Libellé du plan de traitement">
+        <input id="dplan-sessions" type="number" min="1" value="1" placeholder="Nombre de séances">
+        <input id="dplan-cost" type="number" min="0" placeholder="Montant total du devis (GNF)">
+        <button class="btn secondary" onclick="submitDentalPlan('${patientId}')">Créer le devis</button>
+      </div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Plan</th><th>Séances</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="dental-plans-body"></tbody>
+      </table>
+    </div>`;
+  populateDentalIcdSelect();
+  renderDentalConsultHistory(patientId);
+  renderOdontogram(patientId);
+  renderDentalActsHistory(patientId);
+  renderDentalImaging(patientId);
+  renderDentalPlans(patientId);
+}
+function populateDentalIcdSelect() {
+  const sel = document.getElementById("dent-icd");
+  if (!sel) return;
+  seedIcdCatalogIfNeeded();
+  sel.innerHTML = '<option value="">— Diagnostic (CIM-10, optionnel) —</option>' + DB.icd_catalog.map(c => `<option value="${c.id}">${c.code} — ${c.label}</option>`).join("");
+}
+function submitDentalConsultation(patientId) {
+  const icd = DB.icd_catalog.find(c => c.id === val("dent-icd"));
+  const p = DB.patients.find(pp => pp.id === patientId);
+  dbAdd("dental_consultations", {
+    patient_id: patientId, visit_date: new Date().toISOString().slice(0,10), reason: val("dent-reason") || null,
+    medical_antecedents: val("dent-medical-antecedents") || null, dental_antecedents: val("dent-dental-antecedents") || null,
+    allergies: val("dent-allergies") || null, oral_hygiene: val("dent-hygiene"),
+    exam: { teeth: val("dent-exam-teeth") || null, gums: val("dent-exam-gums") || null, tongue: val("dent-exam-tongue") || null, mucosa: val("dent-exam-mucosa") || null, occlusion: val("dent-exam-occlusion") || null },
+    diagnosis_icd_code: icd ? icd.code : null, diagnosis_icd_label: icd ? icd.label : null, doctor_name: currentUserName || null
+  });
+  const fee = Number(DB.clinicInfo.dentalConsultFee || 0);
+  if (fee > 0) dbAdd("invoices", { patient_id: patientId, patient_label: p.first_name + " " + p.last_name, total_amount: fee, status: "en_attente", invoice_date: new Date().toISOString().slice(0,10), label: "Consultation dentaire", source: "dentaire" });
+  logAudit("Consultation dentaire enregistrée", "Patient " + patientId);
+  renderDentalConsultHistory(patientId);
+  alert("Consultation dentaire enregistrée dans le dossier médical.");
+}
+function renderDentalConsultHistory(patientId) {
+  const body = document.getElementById("dent-consult-history-body");
+  if (!body) return;
+  const data = DB.dental_consultations.filter(c => c.patient_id === patientId).sort((a,b) => (b.visit_date||"").localeCompare(a.visit_date||""));
+  body.innerHTML = data.length ? data.map(c => `<tr><td class="mono">${c.visit_date}</td><td>${c.reason || "—"}</td><td>${c.diagnosis_icd_label || "—"}</td><td>${c.doctor_name || "—"}</td></tr>`).join("")
+    : '<tr><td colspan="4" class="empty">Aucune consultation enregistrée.</td></tr>';
+}
+
+// ---- Odontogramme FDI ----
+function switchDentition(patientId, mode) {
+  currentOdontoDentition = mode;
+  renderOdontogram(patientId);
+}
+function toothStatusColor(patientId, toothNumber) {
+  const acts = DB.dental_acts.filter(a => a.patient_id === patientId && a.tooth_number === toothNumber);
+  if (!acts.length) return "#E2E8F0";
+  const last = acts[acts.length - 1];
+  return last.status === "realise" ? "#16A34A" : "#D97706";
+}
+function renderOdontogram(patientId) {
+  const box = document.getElementById("odontogram-box");
+  if (!box) return;
+  const teeth = currentOdontoDentition === "adulte" ? ADULT_TEETH : CHILD_TEETH;
+  const half = teeth.length / 2;
+  const upperRow = teeth.slice(0, half);
+  const lowerRow = teeth.slice(half);
+  const toothBtn = t => `<button class="btn secondary" style="padding:8px 4px;font-size:10.5px;min-width:38px;background:${toothStatusColor(patientId, t)}22;border-color:${toothStatusColor(patientId, t)}" onclick="openToothActForm('${patientId}',${t})">${t}</button>`;
+  box.innerHTML = `
+    <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-bottom:6px">${upperRow.map(toothBtn).join("")}</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">${lowerRow.map(toothBtn).join("")}</div>
+    <p class="sub" style="margin-top:8px">🟢 Acte réalisé — 🟠 Acte planifié — ⬜ Aucun acte enregistré</p>`;
+}
+function openToothActForm(patientId, toothNumber) {
+  document.getElementById("tooth-act-form").innerHTML = `
+    <div class="panel" style="background:var(--bg);margin-top:10px">
+      <h4 style="font-size:13px;margin-bottom:8px">Dent N° ${toothNumber} (FDI)</h4>
+      <select id="tooth-act-type" style="margin-bottom:8px">
+        ${Object.keys(DENTAL_ACT_TYPES).map(k => `<option value="${k}">${DENTAL_ACT_TYPES[k]}</option>`).join("")}
+      </select>
+      <textarea id="tooth-act-notes" placeholder="Notes"></textarea>
+      <div class="form-row" style="margin-top:8px">
+        <input id="tooth-act-cost" type="number" min="0" placeholder="Coût de l'acte (GNF)">
+        <select id="tooth-act-status"><option value="realise">Réalisé aujourd'hui</option><option value="planifie">Planifié</option></select>
+      </div>
+      <button class="btn secondary" style="margin-top:8px" onclick="submitToothAct('${patientId}',${toothNumber})">Enregistrer l'acte</button>
+    </div>`;
+}
+function submitToothAct(patientId, toothNumber) {
+  const type = val("tooth-act-type");
+  const status = val("tooth-act-status");
+  const cost = parseFloat(document.getElementById("tooth-act-cost").value) || 0;
+  const act = dbAdd("dental_acts", {
+    patient_id: patientId, tooth_number: toothNumber, act_type: type, notes: val("tooth-act-notes") || null,
+    status, performed_by: currentUserName || null, performed_at: new Date().toISOString(), cost
+  });
+  if (status === "realise" && cost > 0) {
+    const p = DB.patients.find(pp => pp.id === patientId);
+    dbAdd("invoices", { patient_id: patientId, patient_label: p.first_name + " " + p.last_name, total_amount: cost, status: "en_attente", invoice_date: new Date().toISOString().slice(0,10), label: DENTAL_ACT_TYPES[type] + " — Dent " + toothNumber, source: "dentaire" });
+  }
+  logAudit("Acte dentaire enregistré", DENTAL_ACT_TYPES[type] + " — Dent " + toothNumber + " — Patient " + patientId);
+  document.getElementById("tooth-act-form").innerHTML = "";
+  renderOdontogram(patientId);
+  renderDentalActsHistory(patientId);
+}
+function renderDentalActsHistory(patientId) {
+  const body = document.getElementById("dental-acts-history-body");
+  if (!body) return;
+  const data = DB.dental_acts.filter(a => a.patient_id === patientId).sort((a,b) => (b.performed_at||"").localeCompare(a.performed_at||""));
+  body.innerHTML = data.length ? data.map(a => `
+    <tr><td class="mono">${a.tooth_number}</td><td>${DENTAL_ACT_TYPES[a.act_type] || a.act_type}</td>
+    <td><span class="badge ${a.status === "realise" ? "ok" : "warn"}">${a.status === "realise" ? "Réalisé" : "Planifié"}</span></td>
+    <td class="mono">${new Date(a.performed_at).toLocaleDateString("fr-FR")}</td></tr>`).join("")
+    : '<tr><td colspan="4" class="empty">Aucun acte enregistré.</td></tr>';
+}
+
+// ---- Imagerie dentaire ----
+async function submitDentalImaging(patientId) {
+  const fileInput = document.getElementById("dimg-file");
+  if (!fileInput.files || !fileInput.files[0]) { alert("Sélectionnez un fichier."); return; }
+  if (fileInput.files[0].size > 8 * 1024 * 1024) { alert("Fichier trop volumineux (max 8 Mo)."); return; }
+  const type = val("dimg-type");
+  const dataUrl = await readFileAsDataURL(fileInput);
+  const typeLabels = { retro_alveolaire: "Radiographie rétro-alvéolaire", panoramique: "Radiographie panoramique", cbct: "CBCT" };
+  dbAdd("dental_imaging", { patient_id: patientId, type, file_data: dataUrl, taken_at: new Date().toISOString() });
+  dbAdd("documents", { patient_id: patientId, doc_type: typeLabels[type], filename: fileInput.files[0].name, file_data: dataUrl, uploaded_at: new Date().toISOString() });
+  logAudit("Imagerie dentaire archivée", typeLabels[type] + " — Patient " + patientId);
+  fileInput.value = "";
+  renderDentalImaging(patientId);
+}
+function renderDentalImaging(patientId) {
+  const body = document.getElementById("dental-imaging-body");
+  if (!body) return;
+  const typeLabels = { retro_alveolaire: "Rétro-alvéolaire", panoramique: "Panoramique", cbct: "CBCT" };
+  const data = DB.dental_imaging.filter(d => d.patient_id === patientId).sort((a,b) => (b.taken_at||"").localeCompare(a.taken_at||""));
+  body.innerHTML = data.length ? data.map(d => `<tr><td class="mono">${new Date(d.taken_at).toLocaleDateString("fr-FR")}</td><td>${typeLabels[d.type] || d.type}</td><td><a href="${d.file_data}" target="_blank" style="color:var(--blue)">Voir le fichier</a></td></tr>`).join("")
+    : '<tr><td colspan="3" class="empty">Aucune image archivée.</td></tr>';
+}
+
+// ---- Plan de traitement / devis ----
+function submitDentalPlan(patientId) {
+  const label = val("dplan-label");
+  const cost = parseFloat(document.getElementById("dplan-cost").value) || 0;
+  if (!label || cost <= 0) { alert("Libellé et montant sont requis."); return; }
+  dbAdd("dental_treatment_plans", { patient_id: patientId, label, sessions_total: parseInt(document.getElementById("dplan-sessions").value,10) || 1, sessions_done: 0, total_cost: cost, status: "devis", created_at: new Date().toISOString() });
+  logAudit("Devis dentaire créé", label + " — Patient " + patientId);
+  ["dplan-label","dplan-cost"].forEach(id => document.getElementById(id).value = "");
+  renderDentalPlans(patientId);
+}
+function validateDentalPlan(planId) {
+  const plan = DB.dental_treatment_plans.find(p => p.id === planId);
+  if (!plan) return;
+  plan.status = "valide_patient";
+  plan.validated_at = new Date().toISOString();
+  dbUpdate("dental_treatment_plans", plan);
+  logAudit("Devis dentaire validé par le patient", planId);
+  renderDentalPlans(plan.patient_id);
+}
+function advanceDentalPlanSession(planId) {
+  const plan = DB.dental_treatment_plans.find(p => p.id === planId);
+  if (!plan) return;
+  plan.sessions_done = Number(plan.sessions_done || 0) + 1;
+  if (plan.sessions_done >= plan.sessions_total) plan.status = "termine";
+  else plan.status = "en_cours";
+  dbUpdate("dental_treatment_plans", plan);
+  renderDentalPlans(plan.patient_id);
+}
+function renderDentalPlans(patientId) {
+  const body = document.getElementById("dental-plans-body");
+  if (!body) return;
+  const statusLabels = { devis: "Devis", valide_patient: "Validé par le patient", en_cours: "En cours", termine: "Terminé" };
+  const data = DB.dental_treatment_plans.filter(p => p.patient_id === patientId).sort((a,b) => (b.created_at||"").localeCompare(a.created_at||""));
+  body.innerHTML = data.length ? data.map(p => `
+    <tr><td>${p.label}</td><td>${p.sessions_done || 0}/${p.sessions_total}</td><td class="mono">${Number(p.total_cost).toLocaleString("fr-FR")} GNF</td>
+    <td><span class="badge ${p.status === "termine" ? "ok" : p.status === "devis" ? "warn" : ""}">${statusLabels[p.status]}</span></td>
+    <td><div class="queue-actions">
+      ${p.status === "devis" ? `<button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="validateDentalPlan('${p.id}')">Valider (patient)</button>` : ""}
+      ${p.status !== "devis" && p.status !== "termine" ? `<button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="advanceDentalPlanSession('${p.id}')">Séance suivante</button>` : ""}
+    </div></td></tr>`).join("")
+    : '<tr><td colspan="5" class="empty">Aucun plan de traitement.</td></tr>';
+}
+
+// ---- Consommables, instruments, maintenance ----
+function addDentalSupply() {
+  const name = val("dsup-name");
+  if (!name) { alert("Le nom du consommable est requis."); return; }
+  dbAdd("dental_supplies", { name, current_stock: parseInt(document.getElementById("dsup-stock").value,10) || 0, unit: val("dsup-unit") || null });
+  ["dsup-name","dsup-stock","dsup-unit"].forEach(id => document.getElementById(id).value = "");
+  loadDentalSupplies();
+}
+function deleteDentalSupply(id) { if (!confirm("Supprimer ce consommable ?")) return; dbDelete("dental_supplies", id); loadDentalSupplies(); }
+function loadDentalSupplies() {
+  const body = document.getElementById("dsup-body");
+  if (!body) return;
+  body.innerHTML = DB.dental_supplies.length ? DB.dental_supplies.map(s => `<tr><td>${s.name}</td><td class="mono">${s.current_stock}</td><td>${s.unit || "—"}</td><td><button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="deleteDentalSupply('${s.id}')">Supprimer</button></td></tr>`).join("")
+    : '<tr><td colspan="4" class="empty">Aucun consommable enregistré.</td></tr>';
+}
+function addDentalInstrument() {
+  const name = val("dinst-name");
+  if (!name) { alert("Le nom de l'instrument est requis."); return; }
+  dbAdd("dental_instruments", { name, sterilization_status: "sterile", last_sterilized_at: new Date().toISOString() });
+  document.getElementById("dinst-name").value = "";
+  loadDentalInstruments();
+}
+function toggleInstrumentSterilization(id) {
+  const inst = DB.dental_instruments.find(i => i.id === id);
+  if (!inst) return;
+  inst.sterilization_status = "sterile";
+  inst.last_sterilized_at = new Date().toISOString();
+  dbUpdate("dental_instruments", inst);
+  logAudit("Instrument stérilisé", inst.name);
+  loadDentalInstruments();
+}
+function loadDentalInstruments() {
+  const body = document.getElementById("dinst-body");
+  if (!body) return;
+  body.innerHTML = DB.dental_instruments.length ? DB.dental_instruments.map(i => `
+    <tr><td>${i.name}</td><td><span class="badge ok">Stérile</span></td><td class="mono">${new Date(i.last_sterilized_at).toLocaleDateString("fr-FR")}</td>
+    <td><button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="toggleInstrumentSterilization('${i.id}')">Marquer stérilisé</button></td></tr>`).join("")
+    : '<tr><td colspan="4" class="empty">Aucun instrument enregistré.</td></tr>';
+}
+function addDentalEquipment() {
+  const name = val("dmaint-name");
+  if (!name) { alert("Le nom de l'équipement est requis."); return; }
+  dbAdd("dental_equipment_maintenance", { equipment_name: name, last_maintenance_at: new Date().toISOString(), next_maintenance_due: document.getElementById("dmaint-next").value || null });
+  ["dmaint-name","dmaint-next"].forEach(id => document.getElementById(id).value = "");
+  loadDentalEquipment();
+}
+function loadDentalEquipment() {
+  const body = document.getElementById("dmaint-body");
+  if (!body) return;
+  body.innerHTML = DB.dental_equipment_maintenance.length ? DB.dental_equipment_maintenance.map(e => `
+    <tr><td>${e.equipment_name}</td><td class="mono">${new Date(e.last_maintenance_at).toLocaleDateString("fr-FR")}</td>
+    <td class="mono">${e.next_maintenance_due || "—"}</td><td></td></tr>`).join("")
+    : '<tr><td colspan="4" class="empty">Aucun équipement enregistré.</td></tr>';
+}
+
+// ---- Tableau de bord & rapports ----
+function loadDentalDashboard() {
+  if (!document.getElementById("dent-kpi-consults")) return;
+  const now = new Date();
+  const monthPrefix = now.getFullYear() + "-" + pad2(now.getMonth()+1);
+  document.getElementById("dent-kpi-consults").textContent = DB.dental_consultations.filter(c => (c.visit_date||"").startsWith(monthPrefix)).length;
+  document.getElementById("dent-kpi-acts").textContent = DB.dental_acts.filter(a => a.status === "realise" && (a.performed_at||"").startsWith(monthPrefix)).length;
+  document.getElementById("dent-kpi-plans").textContent = DB.dental_treatment_plans.filter(p => p.status === "devis").length;
+  const revenue = DB.invoices.filter(i => i.source === "dentaire" && (i.invoice_date||"").startsWith(monthPrefix)).reduce((s,i)=>s+Number(i.paid_amount||0),0);
+  document.getElementById("dent-kpi-revenue").textContent = revenue.toLocaleString("fr-FR") + " GNF";
+}
+function generateDentalReport() {
+  const from = document.getElementById("dent-report-from").value;
+  const to = document.getElementById("dent-report-to").value;
+  const consults = DB.dental_consultations.filter(c => (!from || c.visit_date >= from) && (!to || c.visit_date <= to));
+  const acts = DB.dental_acts.filter(a => a.status === "realise" && (!from || (a.performed_at||"")>=from) && (!to || (a.performed_at||"")<=to));
+  const byAct = {};
+  acts.forEach(a => { byAct[DENTAL_ACT_TYPES[a.act_type] || a.act_type] = (byAct[DENTAL_ACT_TYPES[a.act_type] || a.act_type]||0) + 1; });
+  const byPractitioner = {};
+  acts.forEach(a => { const pr = a.performed_by || "—"; byPractitioner[pr] = (byPractitioner[pr]||0) + 1; });
+  const revenue = DB.invoices.filter(i => i.source === "dentaire" && (!from || (i.invoice_date||"")>=from) && (!to || (i.invoice_date||"")<=to)).reduce((s,i)=>s+Number(i.paid_amount||0),0);
+  document.getElementById("dent-report-output").innerHTML = `
+    <div id="dent-report-printable">
+      <div class="kpi-grid" style="margin-bottom:14px">
+        <div class="kpi-card blue"><div class="kpi-label">Consultations</div><div class="kpi-value">${consults.length}</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Actes réalisés</div><div class="kpi-value">${acts.length}</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Recettes</div><div class="kpi-value">${revenue.toLocaleString("fr-FR")} GNF</div></div>
+      </div>
+      <h3 style="font-size:14px;margin-bottom:8px">Répartition des actes</h3>
+      <table style="margin-bottom:14px"><thead><tr><th>Acte</th><th>Nombre</th></tr></thead><tbody>
+      ${Object.keys(byAct).sort((a,b)=>byAct[b]-byAct[a]).map(k => `<tr><td>${k}</td><td>${byAct[k]}</td></tr>`).join("") || '<tr><td colspan="2" class="empty">Aucune donnée.</td></tr>'}
+      </tbody></table>
+      <h3 style="font-size:14px;margin-bottom:8px">Performance des praticiens</h3>
+      <table><thead><tr><th>Praticien</th><th>Actes réalisés</th></tr></thead><tbody>
+      ${Object.keys(byPractitioner).sort((a,b)=>byPractitioner[b]-byPractitioner[a]).map(k => `<tr><td>${k}</td><td>${byPractitioner[k]}</td></tr>`).join("") || '<tr><td colspan="2" class="empty">Aucune donnée.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+function printDentalReport() {
+  const content = document.getElementById("dent-report-printable");
+  if (!content) { alert("Générez d'abord un rapport."); return; }
+  openPrintWindow("Rapport Cabinet Dentaire", `<h2>Rapport Cabinet Dentaire</h2><p>${CLINIC_NAME} — ${new Date().toLocaleDateString("fr-FR")}</p>${content.outerHTML}`);
+}
+
+
+// ============================================================
+// CHIRURGIE VISCÉRALE
+// ============================================================
+let currentVisceralPatientId = null;
+let currentVisceralConsultId = null;
+let currentVisceralCaseId = null;
+
+const ABDOMINAL_ORGANS = [
+  { code: "foie", label: "Foie", x: 105, y: 70 },
+  { code: "vesicule", label: "Vésicule biliaire", x: 130, y: 85 },
+  { code: "estomac", label: "Estomac", x: 90, y: 100 },
+  { code: "duodenum", label: "Duodénum", x: 140, y: 105 },
+  { code: "pancreas", label: "Pancréas", x: 115, y: 115 },
+  { code: "rate", label: "Rate", x: 175, y: 90 },
+  { code: "intestin_grele", label: "Intestin grêle", x: 115, y: 165 },
+  { code: "colon", label: "Côlon", x: 115, y: 145 },
+  { code: "appendice", label: "Appendice", x: 65, y: 190 },
+  { code: "rectum", label: "Rectum", x: 115, y: 215 },
+  { code: "anus", label: "Anus", x: 115, y: 240 },
+  { code: "paroi", label: "Paroi abdominale", x: 60, y: 130 },
+  { code: "hernie", label: "Hernie", x: 165, y: 190 }
+];
+const ANNOTATION_SEVERITY_COLORS = { Légère: "#16A34A", Modérée: "#D97706", Sévère: "#DC2626" };
+const VISCERAL_EXAM_TYPES = {
+  scanner: { label: "Scanner", target: "imaging" }, irm: { label: "IRM", target: "imaging" },
+  echographie: { label: "Échographie", target: "imaging" }, radiographie: { label: "Radiographie", target: "imaging" },
+  endoscopie_digestive: { label: "Endoscopie digestive", target: "imaging" }, coloscopie: { label: "Coloscopie", target: "imaging" },
+  fibroscopie: { label: "Fibroscopie", target: "imaging" }, bilan_biologique: { label: "Bilan biologique", target: "lab" },
+  marqueurs_tumoraux: { label: "Marqueurs tumoraux", target: "lab" }
+};
+const VISCERAL_CHECKLIST_ITEMS = {
+  consent_signed: "Consentement signé", exams_validated: "Examens validés", blood_type: "Groupe sanguin déterminé",
+  blood_reserve: "Réserve de sang", anesthesia_consult: "Consultation anesthésie réalisée", fasting: "Jeûne respecté",
+  antibioprophylaxis: "Antibioprophylaxie administrée", skin_prep: "Préparation cutanée faite",
+  identity_check: "Vérification d'identité", site_check: "Vérification du site opératoire"
+};
+
+function openVisceralWorkspace(patientId) {
+  const errEl = document.getElementById("visc-patient-error");
+  errEl.textContent = "";
+  const p = DB.patients.find(pp => pp.id === patientId);
+  if (!p) { errEl.textContent = "Patient introuvable."; errEl.style.color = "var(--red)"; return; }
+  currentVisceralPatientId = patientId;
+  currentVisceralConsultId = null;
+  renderVisceralWorkspace(patientId);
+  document.getElementById("visceral-workspace").scrollIntoView({ behavior: "smooth" });
+}
+function renderVisceralWorkspace(patientId) {
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const box = document.getElementById("visceral-workspace");
+  if (!p || !box) return;
+  box.innerHTML = `
+    <div class="panel" style="border:1.5px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin-bottom:2px">${p.first_name} ${p.last_name} — N° dossier ${p.id}</h3>
+          <p class="sub">${p.sexe === "M" ? "Masculin" : "Féminin"}${getPatientAge(p) !== null ? ", " + getPatientAge(p) + " ans" : ""}${p.allergies ? " — ⚠️ Allergies : " + p.allergies : ""}</p>
+        </div>
+        <button class="btn secondary" onclick="document.getElementById('visceral-workspace').innerHTML='';currentVisceralPatientId=null;">Fermer</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Consultation de chirurgie</h3>
+      <div class="form-row"><textarea id="visc-reason" placeholder="Motif de consultation"></textarea></div>
+      <div class="form-row"><textarea id="visc-history" placeholder="Histoire de la maladie"></textarea></div>
+      <div class="form-row">
+        <textarea id="visc-medical-antecedents" placeholder="Antécédents médicaux"></textarea>
+        <textarea id="visc-surgical-antecedents" placeholder="Antécédents chirurgicaux"></textarea>
+      </div>
+      <div class="form-row">
+        <input id="visc-allergies" placeholder="Allergies" value="${p.allergies || ""}">
+        <input id="visc-current-treatments" placeholder="Traitements en cours">
+      </div>
+      <div class="form-row">
+        <textarea id="visc-clinical-exam" placeholder="Examen clinique détaillé"></textarea>
+        <textarea id="visc-abdo-exam" placeholder="Examen abdominal structuré"></textarea>
+      </div>
+      <div class="form-row">
+        <select id="visc-icd"><option value="">— Diagnostic principal (CIM-10) —</option></select>
+        <input id="visc-diag-secondary" placeholder="Diagnostics secondaires (optionnel)">
+      </div>
+      <div class="form-row">
+        <select id="visc-urgency">
+          <option value="Programmée">Programmée</option>
+          <option value="Semi-urgente">Semi-urgente</option>
+          <option value="Urgente">Urgente</option>
+          <option value="Vitale">Vitale (extrême urgence)</option>
+        </select>
+      </div>
+      <button class="btn" onclick="submitVisceralConsultation('${patientId}')">Enregistrer la consultation</button>
+      <table style="margin-top:14px">
+        <thead><tr><th>Date</th><th>Motif</th><th>Diagnostic</th><th>Urgence</th><th></th></tr></thead>
+        <tbody id="visc-consult-history-body"></tbody>
+      </table>
+    </div>
+
+    <div id="visceral-consult-detail"></div>`;
+  populateVisceralIcdSelect();
+  renderVisceralConsultHistory(patientId);
+}
+function populateVisceralIcdSelect() {
+  const sel = document.getElementById("visc-icd");
+  if (!sel) return;
+  seedIcdCatalogIfNeeded();
+  sel.innerHTML = '<option value="">— Diagnostic principal (CIM-10) —</option>' + DB.icd_catalog.map(c => `<option value="${c.id}">${c.code} — ${c.label}</option>`).join("");
+}
+function submitVisceralConsultation(patientId) {
+  const icd = DB.icd_catalog.find(c => c.id === val("visc-icd"));
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const consult = dbAdd("visceral_consultations", {
+    patient_id: patientId, patient_label: p.first_name + " " + p.last_name, visit_date: new Date().toISOString().slice(0,10),
+    reason: val("visc-reason") || null, disease_history: val("visc-history") || null,
+    medical_antecedents: val("visc-medical-antecedents") || null, surgical_antecedents: val("visc-surgical-antecedents") || null,
+    allergies: val("visc-allergies") || null, current_treatments: val("visc-current-treatments") || null,
+    clinical_exam: val("visc-clinical-exam") || null, abdominal_exam: val("visc-abdo-exam") || null,
+    diagnosis_icd_code: icd ? icd.code : null, diagnosis_icd_label: icd ? icd.label : null,
+    diagnosis_secondary: val("visc-diag-secondary") || null, urgency_level: val("visc-urgency"), doctor_name: currentUserName || null
+  });
+  const fee = Number(DB.clinicInfo.viscConsultFee || 0);
+  if (fee > 0) dbAdd("invoices", { patient_id: patientId, patient_label: consult.patient_label, total_amount: fee, status: "en_attente", invoice_date: new Date().toISOString().slice(0,10), label: "Consultation chirurgie viscérale", source: "chirurgie_viscerale" });
+  logAudit("Consultation chirurgie viscérale enregistrée", "N° " + consult.id + " — Patient " + patientId);
+  renderVisceralConsultHistory(patientId);
+  openVisceralConsultDetail(consult.id);
+  alert("Consultation enregistrée. Le schéma abdominal et la décision opératoire sont disponibles ci-dessous.");
+}
+function renderVisceralConsultHistory(patientId) {
+  const body = document.getElementById("visc-consult-history-body");
+  if (!body) return;
+  const data = DB.visceral_consultations.filter(c => c.patient_id === patientId).sort((a,b) => (b.visit_date||"").localeCompare(a.visit_date||""));
+  body.innerHTML = data.length ? data.map(c => `
+    <tr><td class="mono">${c.visit_date}</td><td>${c.reason || "—"}</td><td>${c.diagnosis_icd_label || "—"}</td>
+    <td>${c.urgency_level}</td><td><button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="openVisceralConsultDetail('${c.id}')">Ouvrir</button></td></tr>`).join("")
+    : '<tr><td colspan="5" class="empty">Aucune consultation enregistrée.</td></tr>';
+}
+
+// ---- Détail consultation : schéma abdominal, examens, décision opératoire ----
+function openVisceralConsultDetail(consultId) {
+  currentVisceralConsultId = consultId;
+  const consult = DB.visceral_consultations.find(c => c.id === consultId);
+  const box = document.getElementById("visceral-consult-detail");
+  if (!consult || !box) return;
+  box.innerHTML = `
+    <div class="panel">
+      <h3>Schéma abdominal interactif — Consultation ${consult.id}</h3>
+      <div id="abdominal-diagram-box"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Demandes d'examens</h3>
+      <div class="clinic-card-actions" style="margin-bottom:10px">
+        ${Object.keys(VISCERAL_EXAM_TYPES).map(k => `<button class="btn secondary" onclick="openVisceralExamForm('${consult.patient_id}','${k}')">${VISCERAL_EXAM_TYPES[k].label}</button>`).join("")}
+      </div>
+      <div id="visc-exam-subpanel"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Décision opératoire</h3>
+      <div class="form-row">
+        <input id="visc-op-type" placeholder="Type de chirurgie">
+        <select id="visc-op-urgency">
+          <option value="Normal">Programmée</option>
+          <option value="Urgent">Urgente</option>
+          <option value="Vital">Vitale</option>
+        </select>
+        <input id="visc-op-date" type="date">
+      </div>
+      <div class="form-row">
+        <input id="visc-op-surgeon" placeholder="Chirurgien" value="${currentUserName || ""}">
+        <input id="visc-op-anesthetist" placeholder="Anesthésiste">
+        <input id="visc-op-nurses" placeholder="Infirmiers (noms séparés par virgules)">
+      </div>
+      <div class="form-row">
+        <select id="visc-op-room"><option value="">— Salle opératoire —</option></select>
+        <input id="visc-op-equipment" placeholder="Matériel à réserver">
+      </div>
+      <button class="btn" onclick="submitVisceralOperativeDecision('${consult.patient_id}','${consult.id}')">Programmer l'intervention au Bloc Opératoire</button>
+    </div>
+
+    <div class="panel">
+      <h3>Dossier(s) opératoire(s) liés à cette consultation</h3>
+      <table>
+        <thead><tr><th>N°</th><th>Type</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="visc-linked-cases-body"></tbody>
+      </table>
+    </div>
+
+    <div id="visceral-case-workspace"></div>`;
+  populateVisceralRoomSelect();
+  renderAbdominalDiagram(consultId);
+  renderVisceralLinkedCases(consult.patient_id, consultId);
+}
+function populateVisceralRoomSelect() {
+  const sel = document.getElementById("visc-op-room");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Salle opératoire —</option>' + DB.operating_rooms.filter(o => o.status !== "maintenance").map(o => `<option value="${o.id}">${o.number}</option>`).join("");
+}
+
+// ---- Schéma abdominal interactif ----
+function generateAbdominalSvg(consultId) {
+  const existing = DB.abdominal_annotations.filter(a => a.consultation_id === consultId);
+  const zones = ABDOMINAL_ORGANS.map(o => {
+    const ann = existing.find(a => a.organ_code === o.code);
+    const color = ann ? (ANNOTATION_SEVERITY_COLORS[ann.severity] || "#2563EB") : "#94A3B8";
+    return `<circle cx="${o.x}" cy="${o.y}" r="11" fill="${color}" fill-opacity="${ann ? 0.9 : 0.35}" stroke="#fff" stroke-width="1.5" style="cursor:pointer" onclick="openAbdominalAnnotationForm('${consultId}','${o.code}','${o.label}')"><title>${o.label}</title></circle>`;
+  }).join("");
+  const silhouette = `<rect x="40" y="55" width="150" height="200" rx="40" fill="#E2E8F0"/>`;
+  return `<svg viewBox="0 0 230 280" style="width:100%;max-width:260px;height:auto;background:var(--bg);border-radius:12px">${silhouette}${zones}</svg>`;
+}
+function renderAbdominalDiagram(consultId) {
+  const box = document.getElementById("abdominal-diagram-box");
+  if (!box) return;
+  box.innerHTML = `
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+      <div>${generateAbdominalSvg(consultId)}</div>
+      <div style="flex:1;min-width:220px">
+        <p class="sub" style="margin-bottom:8px">Cliquez sur un organe pour ajouter une annotation.</p>
+        <div id="abdo-annotation-form-box"></div>
+        <table style="margin-top:10px">
+          <thead><tr><th>Organe</th><th>Diagnostic</th><th>Gravité</th></tr></thead>
+          <tbody id="abdo-annotations-body"></tbody>
+        </table>
+      </div>
+    </div>`;
+  renderAbdominalAnnotationsList(consultId);
+}
+function renderAbdominalAnnotationsList(consultId) {
+  const body = document.getElementById("abdo-annotations-body");
+  if (!body) return;
+  const data = DB.abdominal_annotations.filter(a => a.consultation_id === consultId).sort((a,b) => (b.created_at||"").localeCompare(a.created_at||""));
+  body.innerHTML = data.length ? data.map(a => `
+    <tr><td style="font-size:11.5px">${a.organ_label}</td><td style="font-size:11.5px">${a.diagnosis || "—"}</td>
+    <td><span class="badge" style="background:${(ANNOTATION_SEVERITY_COLORS[a.severity]||"#2563EB")}22;color:${ANNOTATION_SEVERITY_COLORS[a.severity]||"#2563EB"}">${a.severity || "—"}</span></td></tr>`).join("")
+    : '<tr><td colspan="3" class="empty">Aucune annotation.</td></tr>';
+}
+function openAbdominalAnnotationForm(consultId, organCode, organLabel) {
+  const box = document.getElementById("abdo-annotation-form-box");
+  if (!box) return;
+  box.innerHTML = `
+    <div class="panel" style="background:var(--bg);padding:12px">
+      <h4 style="font-size:13px;margin-bottom:8px">${organLabel}</h4>
+      <input id="abdo-diagnosis" placeholder="Diagnostic" style="margin-bottom:8px">
+      <input id="abdo-localisation" placeholder="Localisation précise" style="margin-bottom:8px">
+      <select id="abdo-severity" style="margin-bottom:8px">
+        <option value="Légère">Légère</option>
+        <option value="Modérée">Modérée</option>
+        <option value="Sévère">Sévère</option>
+      </select>
+      <textarea id="abdo-notes" placeholder="Notes"></textarea>
+      <input id="abdo-image" type="file" accept="image/*" style="margin-top:8px">
+      <button class="btn secondary" style="margin-top:8px" onclick="submitAbdominalAnnotation('${consultId}','${organCode}','${organLabel}')">Enregistrer</button>
+    </div>`;
+}
+async function submitAbdominalAnnotation(consultId, organCode, organLabel) {
+  const consult = DB.visceral_consultations.find(c => c.id === consultId);
+  const fileInput = document.getElementById("abdo-image");
+  let imageData = null;
+  if (fileInput.files && fileInput.files[0]) imageData = await readFileAsDataURL(fileInput);
+  dbAdd("abdominal_annotations", {
+    consultation_id: consultId, patient_id: consult.patient_id, organ_code: organCode, organ_label: organLabel,
+    diagnosis: val("abdo-diagnosis") || null, localisation: val("abdo-localisation") || null,
+    severity: val("abdo-severity"), notes: val("abdo-notes") || null, created_by: currentUserName || null
+  });
+  if (imageData) dbAdd("documents", { patient_id: consult.patient_id, doc_type: "Imagerie abdominale — " + organLabel, filename: fileInput.files[0].name, file_data: imageData, uploaded_at: new Date().toISOString() });
+  logAudit("Annotation abdominale ajoutée", organLabel + " — Consultation " + consultId);
+  document.getElementById("abdo-annotation-form-box").innerHTML = "";
+  renderAbdominalDiagram(consultId);
+}
+
+// ---- Demandes d'examens ----
+function openVisceralExamForm(patientId, examKey) {
+  const info = VISCERAL_EXAM_TYPES[examKey];
+  const catCategory = info.target === "imaging" ? "Imagerie" : "Laboratoire";
+  const tests = DB.lab_test_catalog.filter(t => (t.category || "Laboratoire") === catCategory);
+  document.getElementById("visc-exam-subpanel").innerHTML = `
+    <div class="panel" style="background:var(--bg);margin-top:10px">
+      <h4 style="font-size:13px;margin-bottom:8px">${info.label}</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        ${tests.length ? tests.map(t => `<label style="display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;cursor:pointer"><input type="checkbox" value="${t.id}" class="visc-exam-check"> ${t.name}</label>`).join("") : `<p class="sub">Aucun examen "${catCategory}" au catalogue — la demande sera envoyée en texte libre.</p>`}
+      </div>
+      <button class="btn secondary" onclick="submitVisceralExamRequest('${patientId}','${examKey}')">Envoyer la demande</button>
+    </div>`;
+}
+function submitVisceralExamRequest(patientId, examKey) {
+  const info = VISCERAL_EXAM_TYPES[examKey];
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const checked = Array.from(document.querySelectorAll(".visc-exam-check:checked")).map(c => c.value);
+  if (info.target === "imaging") {
+    const items = checked.length ? checked.map(id => (DB.lab_test_catalog.find(t=>t.id===id)||{}).name || id) : [info.label];
+    items.forEach(name => {
+      const request = dbAdd("imaging_requests", { patient_id: patientId, patient_label: p.first_name + " " + p.last_name, doctor_name: currentUserName, service_name: "Chirurgie Viscérale", exam_type: name, priority: "Normal", requested_at: new Date().toISOString(), requested_by: currentUserName || null, status: "attente" });
+      logAudit("Demande imagerie (chirurgie viscérale)", "N° " + request.id);
+    });
+  } else {
+    const testNames = checked.length ? checked.map(id => (DB.lab_test_catalog.find(t=>t.id===id)||{}).name || id) : [info.label];
+    const request = dbAdd("lab_requests", { patient_id: patientId, patient_label: p.first_name + " " + p.last_name, doctor_name: currentUserName, service_name: "Chirurgie Viscérale", category: "Laboratoire", priority: "Normal", test_names: testNames, requested_at: new Date().toISOString(), requested_by: currentUserName || null, status: "attente" });
+    checked.forEach(test_id => dbAdd("lab_results", { patient_id: patientId, test_id, request_id: request.id, result_value: "", flag: null, notes: null, reference_used: null, result_date: new Date().toISOString() }));
+    logAudit("Demande labo (chirurgie viscérale)", "N° " + request.id);
+  }
+  alert("Demande envoyée. Les résultats seront automatiquement intégrés au dossier médical.");
+  document.getElementById("visc-exam-subpanel").innerHTML = "";
+}
+
+// ---- Décision opératoire (crée une demande au Bloc Opératoire) ----
+function submitVisceralOperativeDecision(patientId, consultId) {
+  const p = DB.patients.find(pp => pp.id === patientId);
+  const consult = DB.visceral_consultations.find(c => c.id === consultId);
+  const type = val("visc-op-type");
+  const surgeon = val("visc-op-surgeon");
+  if (!type || !surgeon) { alert("Type de chirurgie et chirurgien sont requis."); return; }
+  const roomId = val("visc-op-room");
+  const room = DB.operating_rooms.find(o => o.id === roomId);
+  const req = dbAdd("surgical_requests", {
+    patient_id: patientId, patient_label: p.first_name + " " + p.last_name,
+    diagnosis: consult.diagnosis_icd_label || consult.reason || "Pathologie viscérale",
+    intervention_type: type, urgency: val("visc-op-urgency"), surgeon_name: surgeon, service_name: "Chirurgie Viscérale",
+    specialty: "Chirurgie Viscérale", anesthetist_name: val("visc-op-anesthetist") || null,
+    nurses: val("visc-op-nurses") ? val("visc-op-nurses").split(",").map(s=>s.trim()).filter(Boolean) : [],
+    equipment_reserved: val("visc-op-equipment") || null,
+    room_id: roomId || null, room_number: room ? room.number : null,
+    scheduled_date: document.getElementById("visc-op-date").value || null,
+    desired_date: document.getElementById("visc-op-date").value || new Date().toISOString().slice(0,10),
+    requested_by: currentUserName || null, requested_at: new Date().toISOString(),
+    consultation_id: consultId, status: roomId ? "programme" : "demande",
+    visceral_checklist: Object.keys(VISCERAL_CHECKLIST_ITEMS).reduce((o,k)=>{o[k]=false;return o;},{}),
+    checklist: { preop_exams: false, imaging: false, consent: false, room: !!roomId, team: !!surgeon, supplies: false }
+  });
+  logAudit("Décision opératoire (chirurgie viscérale)", "N° " + req.id + " — " + type);
+  renderVisceralLinkedCases(patientId, consultId);
+  alert("Intervention N° " + req.id + " créée dans le Bloc Opératoire (spécialité Chirurgie Viscérale).");
+}
+function renderVisceralLinkedCases(patientId, consultId) {
+  const body = document.getElementById("visc-linked-cases-body");
+  if (!body) return;
+  const data = DB.surgical_requests.filter(r => r.consultation_id === consultId);
+  body.innerHTML = data.length ? data.map(r => `
+    <tr><td class="mono">${r.id}</td><td>${r.intervention_type}</td><td>${surgeryStatusBadge(r.status)}</td>
+    <td><button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="openVisceralCaseWorkspace('${r.id}')">Ouvrir</button></td></tr>`).join("")
+    : '<tr><td colspan="4" class="empty">Aucune intervention créée pour cette consultation.</td></tr>';
+}
+
+// ---- Checklist préopératoire détaillée + blocage ----
+function openVisceralCaseWorkspace(requestId) {
+  currentVisceralCaseId = requestId;
+  const r = DB.surgical_requests.find(x => x.id === requestId);
+  const box = document.getElementById("visceral-case-workspace");
+  if (!r || !box) return;
+  const cl = r.visceral_checklist || Object.keys(VISCERAL_CHECKLIST_ITEMS).reduce((o,k)=>{o[k]=false;return o;},{});
+  const allDone = Object.keys(VISCERAL_CHECKLIST_ITEMS).every(k => cl[k]);
+  box.innerHTML = `
+    <div class="panel" style="border:1.5px solid var(--red)">
+      <h3>Checklist préopératoire — Intervention N° ${r.id}</h3>
+      <p class="sub" style="margin-bottom:10px">Toutes les cases doivent être cochées pour autoriser le démarrage de l'intervention.</p>
+      ${Object.keys(VISCERAL_CHECKLIST_ITEMS).map(k => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px">
+          <input type="checkbox" ${cl[k] ? "checked" : ""} onchange="toggleVisceralChecklistItem('${requestId}','${k}',this.checked)"> ${VISCERAL_CHECKLIST_ITEMS[k]}
+        </label>`).join("")}
+      <button class="btn" style="margin-top:10px" onclick="startVisceralSurgery('${requestId}')">🔪 Démarrer l'intervention</button>
+      ${!allDone ? '<p class="sub" style="color:var(--red);font-weight:700;margin-top:6px">⛔ Étapes obligatoires manquantes — le démarrage est bloqué.</p>' : ''}
+    </div>
+
+    <div class="panel">
+      <h3>Intervention — Déroulement enrichi</h3>
+      <div class="form-row">
+        <input id="visc-time-start" type="time" value="${r.op_start_time||""}">
+        <input id="visc-time-end" type="time" value="${r.op_end_time||""}">
+        <input id="visc-assistant" placeholder="Assistant" value="${r.assistant_name||""}">
+        <input id="visc-instrumentist" placeholder="Instrumentiste" value="${r.instrumentist_name||""}">
+      </div>
+      <div class="form-row"><textarea id="visc-op-diagnosis" placeholder="Diagnostic opératoire">${r.operative_diagnosis||""}</textarea></div>
+      <div class="form-row"><textarea id="visc-technique" placeholder="Technique opératoire">${r.act_performed||""}</textarea></div>
+      <div class="form-row">
+        <textarea id="visc-incidents" placeholder="Incidents">${r.incidents||""}</textarea>
+        <textarea id="visc-complications" placeholder="Complications">${r.complications||""}</textarea>
+      </div>
+      <div class="form-row">
+        <textarea id="visc-implants" placeholder="Implants">${r.implants||""}</textarea>
+        <textarea id="visc-consommables" placeholder="Matériel utilisé / consommables">${r.supplies_used||""}</textarea>
+      </div>
+      <div class="form-row">
+        <input id="visc-media" type="file" accept="image/*,video/*" multiple>
+      </div>
+      <button class="btn secondary" onclick="submitVisceralIntervention('${requestId}')">Enregistrer le déroulement</button>
+      ${r.locked ? `<p class="sub" style="margin-top:8px">🔒 Compte rendu validé — <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="correctSurgeryReport('${requestId}')">Corriger (nouvelle version)</button> <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="printOperativeReport('${requestId}')">🖨️ Compte rendu</button></p>` : ''}
+    </div>
+
+    <div class="panel">
+      <h3>Facturation</h3>
+      <div class="form-row">
+        <input id="visc-fee-room" type="number" min="0" placeholder="Frais de salle / bloc (GNF)">
+        <input id="visc-fee-honoraires" type="number" min="0" placeholder="Honoraires chirurgien (GNF)">
+        <input id="visc-fee-supplies" type="number" min="0" placeholder="Consommables/implants (GNF)">
+        <button class="btn secondary" onclick="submitVisceralBilling('${requestId}')">Facturer</button>
+      </div>
+      ${r.billed ? `<p class="sub" style="color:var(--green)">✅ Facturé : ${Number(r.total_fee||0).toLocaleString('fr-FR')} GNF</p>` : ''}
+    </div>
+
+    <div class="panel">
+      <h3>Suivi postopératoire</h3>
+      <div class="form-row">
+        <input id="vpop-pain" type="number" min="0" max="10" placeholder="Douleur (0-10)">
+        <input id="vpop-temp" type="number" step="0.1" placeholder="Température">
+        <input id="vpop-bp" placeholder="Tension artérielle">
+        <input id="vpop-pulse" type="number" placeholder="Pouls">
+      </div>
+      <div class="form-row">
+        <select id="vpop-healing"><option value="Bonne">Cicatrisation : Bonne</option><option value="Retardée">Retardée</option><option value="Infectée">Infectée</option></select>
+        <input id="vpop-dressing" placeholder="Pansements">
+        <input id="vpop-antibiotics" placeholder="Antibiotiques">
+      </div>
+      <div class="form-row">
+        <input id="vpop-drainage" placeholder="Drainages">
+        <input id="vpop-nutrition" placeholder="Alimentation">
+      </div>
+      <div class="form-row"><textarea id="vpop-complications" placeholder="Complications postopératoires"></textarea></div>
+      <button class="btn secondary" onclick="submitVisceralPostop('${requestId}')">Enregistrer le suivi</button>
+      <table style="margin-top:10px">
+        <thead><tr><th>Date</th><th>Douleur</th><th>Cicatrisation</th><th>Complications</th></tr></thead>
+        <tbody id="visc-postop-body"></tbody>
+      </table>
+      <div class="form-row" style="margin-top:10px">
+        <input id="visc-discharge-date" type="date" placeholder="Date de sortie">
+        <input id="visc-control-rdv" type="date" placeholder="RDV de contrôle">
+        <button class="btn" onclick="submitVisceralDischarge('${requestId}')">Enregistrer la sortie</button>
+      </div>
+    </div>`;
+  renderVisceralPostopHistory(requestId);
+}
+function toggleVisceralChecklistItem(requestId, key, checked) {
+  const r = DB.surgical_requests.find(x => x.id === requestId);
+  if (!r) return;
+  r.visceral_checklist = r.visceral_checklist || {};
+  r.visceral_checklist[key] = checked;
+  dbUpdate("surgical_requests", r);
+  logAudit("Checklist préopératoire mise à jour", VISCERAL_CHECKLIST_ITEMS[key] + " — N° " + requestId);
+  openVisceralCaseWorkspace(requestId);
+}
+function startVisceralSurgery(requestId) {
+  const r = DB.surgical_requests.find(x => x.id === requestId);
+  if (!r) return;
+  const cl = r.visceral_checklist || {};
+  const missing = Object.keys(VISCERAL_CHECKLIST_ITEMS).filter(k => !cl[k]);
+  if (missing.length) {
+    alert("⛔ Démarrage impossible — étapes obligatoires manquantes :\n" + missing.map(k => "• " + VISCERAL_CHECKLIST_ITEMS[k]).join("\n"));
+    return;
+  }
+  startSurgery(requestId);
+  logAudit("Intervention viscérale démarrée (checklist validée)", "N° " + requestId);
+  openVisceralCaseWorkspace(requestId);
+}
+async function submitVisceralIntervention(requestId) {
+  const r = DB.surgical_requests.find(x => x.id === requestId);
+  if (!r) return;
+  if (r.locked) { alert("Compte rendu verrouillé — utilisez la correction versionnée."); return; }
+  const opDiagnosis = val("visc-op-diagnosis");
+  const technique = val("visc-technique");
+  if (!opDiagnosis || !technique) { alert("Diagnostic opératoire et technique sont requis."); return; }
+  const fileInput = document.getElementById("visc-media");
+  const media = [];
+  if (fileInput.files && fileInput.files.length) {
+    for (const f of Array.from(fileInput.files).slice(0,5)) {
+      if (f.size <= 6 * 1024 * 1024) media.push({ filename: f.name, data_url: await readFileAsDataURL({ files: [f] }), uploaded_at: new Date().toISOString() });
+    }
+  }
+  Object.assign(r, {
+    op_start_time: document.getElementById("visc-time-start").value || null, op_end_time: document.getElementById("visc-time-end").value || null,
+    assistant_name: val("visc-assistant") || null, instrumentist_name: val("visc-instrumentist") || null,
+    operative_diagnosis: opDiagnosis, act_performed: technique,
+    incidents: val("visc-incidents") || null, complications: val("visc-complications") || null,
+    implants: val("visc-implants") || null, supplies_used: val("visc-consommables") || null,
+    media_files: (r.media_files || []).concat(media),
+    end_at: new Date().toISOString(), status: "termine", recorded_by: currentUserName || null
+  });
+  dbUpdate("surgical_requests", r);
+  media.forEach(m => dbAdd("documents", { patient_id: r.patient_id, doc_type: "Média peropératoire", filename: m.filename, file_data: m.data_url, uploaded_at: m.uploaded_at }));
+  logAudit("Déroulement chirurgie viscérale enregistré", "N° " + requestId);
+  alert("Déroulement enregistré. Le compte rendu est prêt pour validation (voir Bloc Opératoire).");
+  openVisceralCaseWorkspace(requestId);
+  loadVisceralDashboard(); loadVisceralCasesList();
+}
+function submitVisceralBilling(requestId) {
+  const r = DB.surgical_requests.find(x => x.id === requestId);
+  if (!r) return;
+  const feeRoom = parseFloat(document.getElementById("visc-fee-room").value) || 0;
+  const feeHonoraires = parseFloat(document.getElementById("visc-fee-honoraires").value) || 0;
+  const feeSupplies = parseFloat(document.getElementById("visc-fee-supplies").value) || 0;
+  const total = feeRoom + feeHonoraires + feeSupplies;
+  if (total <= 0) { alert("Renseignez au moins un montant."); return; }
+  Object.assign(r, { fee_room: feeRoom, fee_honoraires: feeHonoraires, fee_supplies: feeSupplies, total_fee: total, billed: true });
+  dbUpdate("surgical_requests", r);
+  dbAdd("invoices", { patient_id: r.patient_id, patient_label: r.patient_label, total_amount: total, status: "en_attente", invoice_date: new Date().toISOString().slice(0,10), label: "Chirurgie viscérale — " + r.intervention_type + " (N° " + r.id + ")", source: "chirurgie_viscerale" });
+  logAudit("Chirurgie viscérale facturée", "N° " + r.id + " — " + total.toLocaleString("fr-FR") + " GNF");
+  openVisceralCaseWorkspace(requestId);
+  loadVisceralDashboard();
+}
+function submitVisceralPostop(requestId) {
+  const r = DB.surgical_requests.find(x => x.id === requestId);
+  if (!r) return;
+  dbAdd("postop_rounds", {
+    surgical_request_id: requestId, patient_id: r.patient_id, at: new Date().toISOString(), recorded_by: currentUserName || null,
+    pain_score: document.getElementById("vpop-pain").value || null, temperature: document.getElementById("vpop-temp").value || null,
+    blood_pressure: val("vpop-bp") || null, pulse: document.getElementById("vpop-pulse").value || null,
+    wound_healing: val("vpop-healing"), dressing: val("vpop-dressing") || null, antibiotics: val("vpop-antibiotics") || null,
+    drainage: val("vpop-drainage") || null, nutrition: val("vpop-nutrition") || null, complications: val("vpop-complications") || null
+  });
+  logAudit("Suivi postopératoire viscéral enregistré", "N° " + requestId);
+  renderVisceralPostopHistory(requestId);
+  loadVisceralDashboard();
+}
+function renderVisceralPostopHistory(requestId) {
+  const body = document.getElementById("visc-postop-body");
+  if (!body) return;
+  const data = DB.postop_rounds.filter(w => w.surgical_request_id === requestId).sort((a,b) => (b.at||"").localeCompare(a.at||""));
+  body.innerHTML = data.length ? data.map(w => `
+    <tr><td class="mono">${new Date(w.at).toLocaleString("fr-FR")}</td><td class="mono">${w.pain_score||"—"}/10</td>
+    <td>${w.wound_healing||"—"}</td><td style="font-size:11.5px">${w.complications||"—"}</td></tr>`).join("")
+    : '<tr><td colspan="4" class="empty">Aucun suivi enregistré.</td></tr>';
+}
+function submitVisceralDischarge(requestId) {
+  const r = DB.surgical_requests.find(x => x.id === requestId);
+  if (!r) return;
+  const dischargeDate = document.getElementById("visc-discharge-date").value;
+  const controlRdv = document.getElementById("visc-control-rdv").value;
+  if (!dischargeDate) { alert("La date de sortie est requise."); return; }
+  r.discharge_date = dischargeDate;
+  dbUpdate("surgical_requests", r);
+  if (controlRdv) dbAdd("appointments", { patient_id: r.patient_id, appointment_date: controlRdv, start_time: "09:00", end_time: "09:30", reason: "Contrôle postopératoire — Chirurgie viscérale", status: "planifie" });
+  logAudit("Sortie postopératoire enregistrée", "N° " + requestId + " — sortie le " + dischargeDate);
+  alert("Sortie enregistrée" + (controlRdv ? " et RDV de contrôle programmé." : "."));
+}
+
+// ---- Liste des cas & tableau de bord ----
+function loadVisceralCasesList() {
+  const body = document.getElementById("visceral-cases-body");
+  if (!body) return;
+  const data = DB.surgical_requests.filter(r => r.specialty === "Chirurgie Viscérale").sort((a,b) => (b.requested_at||"").localeCompare(a.requested_at||""));
+  body.innerHTML = data.length ? data.map(r => `
+    <tr><td class="mono">${r.id}</td><td>${r.patient_label}</td><td>${surgeryStatusBadge(r.status)}</td>
+    <td>${r.room_number || "—"}</td><td>${r.surgeon_name || "—"}</td>
+    <td><button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="openVisceralCaseWorkspace('${r.id}')">Ouvrir</button></td></tr>`).join("")
+    : '<tr><td colspan="6" class="empty">Aucun cas de chirurgie viscérale.</td></tr>';
+}
+function loadVisceralDashboard() {
+  if (!document.getElementById("visc-kpi-scheduled")) return;
+  const now = new Date();
+  const monthPrefix = now.getFullYear() + "-" + pad2(now.getMonth()+1);
+  const cases = DB.surgical_requests.filter(r => r.specialty === "Chirurgie Viscérale");
+  document.getElementById("visc-kpi-scheduled").textContent = cases.filter(r => r.status === "programme").length;
+  document.getElementById("visc-kpi-done").textContent = cases.filter(r => r.status === "valide" && (r.validated_at||"").startsWith(monthPrefix)).length;
+  document.getElementById("visc-kpi-cancelled").textContent = cases.filter(r => r.status === "annule").length;
+  document.getElementById("visc-kpi-urgent").textContent = cases.filter(r => (r.urgency === "Urgent" || r.urgency === "Vital") && !["valide","annule"].includes(r.status)).length;
+  const durations = cases.filter(r => r.op_start_time && r.op_end_time).map(r => {
+    const [sh,sm] = r.op_start_time.split(":").map(Number); const [eh,em] = r.op_end_time.split(":").map(Number);
+    return (eh*60+em) - (sh*60+sm);
+  }).filter(d => d > 0);
+  document.getElementById("visc-kpi-duration").textContent = (durations.length ? Math.round(durations.reduce((s,d)=>s+d,0)/durations.length) : 0) + " min";
+  document.getElementById("visc-kpi-complications").textContent = cases.filter(r => r.complications && (r.end_at||"").startsWith(monthPrefix)).length;
+  const revenue = DB.invoices.filter(i => i.source === "chirurgie_viscerale" && (i.invoice_date||"").startsWith(monthPrefix)).reduce((s,i)=>s+Number(i.paid_amount||0),0);
+  document.getElementById("visc-kpi-revenue").textContent = revenue.toLocaleString("fr-FR") + " GNF";
+  loadVisceralCasesList();
+}
+
+// ---- Rapports ----
+function generateVisceralReport() {
+  const from = document.getElementById("visc-report-from").value;
+  const to = document.getElementById("visc-report-to").value;
+  const cases = DB.surgical_requests.filter(r => r.specialty === "Chirurgie Viscérale" && (!from || (r.requested_at||"")>=from) && (!to || (r.requested_at||"")<=to));
+  const bySurgeon = {}; cases.forEach(r => { bySurgeon[r.surgeon_name||"—"] = (bySurgeon[r.surgeon_name||"—"]||0)+1; });
+  const complications = cases.filter(r => r.complications).length;
+  const revenue = cases.reduce((s,r)=>s+Number(r.total_fee||0),0);
+  document.getElementById("visc-report-output").innerHTML = `
+    <div id="visc-report-printable">
+      <div class="kpi-grid" style="margin-bottom:14px">
+        <div class="kpi-card blue"><div class="kpi-label">Interventions</div><div class="kpi-value">${cases.length}</div></div>
+        <div class="kpi-card red"><div class="kpi-label">Complications</div><div class="kpi-value">${complications}</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Recettes</div><div class="kpi-value">${revenue.toLocaleString("fr-FR")} GNF</div></div>
+      </div>
+      <h3 style="font-size:14px;margin-bottom:8px">Interventions par chirurgien</h3>
+      <table><thead><tr><th>Chirurgien</th><th>Nombre</th></tr></thead><tbody>
+      ${Object.keys(bySurgeon).sort((a,b)=>bySurgeon[b]-bySurgeon[a]).map(k => `<tr><td>${k}</td><td>${bySurgeon[k]}</td></tr>`).join("") || '<tr><td colspan="2" class="empty">Aucune donnée.</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+function printVisceralReport() {
+  const content = document.getElementById("visc-report-printable");
+  if (!content) { alert("Générez d'abord un rapport."); return; }
+  openPrintWindow("Rapport Chirurgie Viscérale", `<h2>Rapport Chirurgie Viscérale</h2><p>${CLINIC_NAME} — ${new Date().toLocaleDateString("fr-FR")}</p>${content.outerHTML}`);
+}
+
+
+// ============================================================
+// ADMINISTRATION DES SERVICES (PLATEFORME MODULAIRE)
+// ============================================================
+let serviceFieldsDraft = [];
+let currentDynamicServiceId = null;
+const LINKABLE_MODULES = ["Accueil","Rendez-vous","Consultation","Dossier Médical Électronique","Urgences","Hospitalisation","Bloc opératoire","Laboratoire","Imagerie","Pharmacie","Caisse & Facturation","Comptabilité","Gestion des stocks","Ressources humaines","Rapports et tableaux de bord"];
+const DYNAMIC_FIELD_TYPE_LABELS = { text: "Texte", number: "Nombre", list: "Liste déroulante", date: "Date", checkbox: "Case à cocher", image: "Image", file: "Fichier", signature: "Signature" };
+
+function populateServiceModulesChecklist() {
+  const box = document.getElementById("svc-modules-checklist");
+  if (!box || box.dataset.rendered) return;
+  box.dataset.rendered = "1";
+  box.innerHTML = LINKABLE_MODULES.map(m => `<label style="display:flex;align-items:center;gap:5px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px;cursor:pointer"><input type="checkbox" class="svc-module-check" value="${m}"> ${m}</label>`).join("");
+}
+function addServiceFieldDraft() {
+  const label = val("svc-field-label");
+  if (!label) { alert("Le libellé du champ est requis."); return; }
+  const type = val("svc-field-type");
+  const options = type === "list" ? val("svc-field-options").split(",").map(s => s.trim()).filter(Boolean) : [];
+  serviceFieldsDraft.push({ id: "f" + Date.now() + Math.floor(Math.random()*1000), label, type, options, required: document.getElementById("svc-field-required").checked });
+  ["svc-field-label","svc-field-options"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("svc-field-required").checked = false;
+  renderServiceFieldsDraft();
+}
+function removeServiceFieldDraft(fieldId) {
+  serviceFieldsDraft = serviceFieldsDraft.filter(f => f.id !== fieldId);
+  renderServiceFieldsDraft();
+}
+function renderServiceFieldsDraft() {
+  const box = document.getElementById("svc-fields-draft-list");
+  if (!box) return;
+  box.innerHTML = serviceFieldsDraft.length ? serviceFieldsDraft.map(f => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12.5px">
+      <span>${f.label} — <span class="sub">${DYNAMIC_FIELD_TYPE_LABELS[f.type]}${f.required ? " · Obligatoire" : ""}${f.options.length ? " · " + f.options.join("/") : ""}</span></span>
+      <button class="btn secondary" style="padding:3px 8px;font-size:10.5px" onclick="removeServiceFieldDraft('${f.id}')">Retirer</button>
+    </div>`).join("") : '<p class="sub">Aucun champ personnalisé ajouté pour le moment.</p>';
+}
+
+// ---- Création / gestion des services ----
+function createDynamicService() {
+  if (currentUserRole !== "fondateur") { alert("Réservé au Fondateur."); return; }
+  const errEl = document.getElementById("svc-create-error");
+  errEl.style.display = "none";
+  const name = val("svc-name");
+  const code = val("svc-code");
+  if (!name || !code) { errEl.textContent = "Nom et code interne sont requis."; errEl.style.display = "block"; return; }
+  if (DB.service_registry.some(s => s.code.toUpperCase() === code.toUpperCase())) { errEl.textContent = "Ce code interne existe déjà."; errEl.style.display = "block"; return; }
+  const linkedModules = Array.from(document.querySelectorAll(".svc-module-check:checked")).map(c => c.value);
+  const service = dbAdd("service_registry", {
+    name, code: code.toUpperCase(), category: val("svc-category"), description: val("svc-description") || null,
+    responsible: val("svc-responsible") || null, phone: val("svc-phone") || null, email: val("svc-email") || null,
+    location_building: val("svc-building") || null, location_floor: val("svc-floor") || null, location_room: val("svc-room") || null,
+    hours: val("svc-hours") || null, icon: val("svc-icon") || "🏥", color: document.getElementById("svc-color").value,
+    display_order: parseInt(document.getElementById("svc-order").value, 10) || 1, status: "actif",
+    linked_modules: linkedModules, custom_fields: serviceFieldsDraft,
+    notification_settings: {
+      internal: document.getElementById("svc-notif-internal").checked, sms: document.getElementById("svc-notif-sms").checked,
+      email: document.getElementById("svc-notif-email").checked, whatsapp: document.getElementById("svc-notif-whatsapp").checked
+    }
+  });
+  seedPredefinedRolesIfNeeded();
+  if (!DB.roles.some(r => r.name === "Praticien — " + name)) {
+    const perms = emptyPermissions();
+    dbAdd("roles", { name: "Praticien — " + name, is_predefined: false, permissions: perms });
+  }
+  logAudit("Service créé", name + " (" + code + ")");
+  ["svc-name","svc-code","svc-description","svc-responsible","svc-phone","svc-email","svc-building","svc-floor","svc-room","svc-hours","svc-icon"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  document.getElementById("svc-order").value = "1";
+  serviceFieldsDraft = [];
+  renderServiceFieldsDraft();
+  document.querySelectorAll(".svc-module-check").forEach(c => c.checked = false);
+  loadServiceRegistryList();
+  renderDynamicServicesNav();
+  alert("Service « " + name + " » créé. Il apparaît maintenant dans le menu, sans aucune modification de code. Un rôle « Praticien — " + name + " » a aussi été créé (permissions à configurer dans Utilisateurs & Sécurité).");
+}
+function toggleServiceStatus(id) {
+  if (currentUserRole !== "fondateur") { alert("Réservé au Fondateur."); return; }
+  const s = DB.service_registry.find(x => x.id === id);
+  if (!s) return;
+  s.status = s.status === "actif" ? "inactif" : "actif";
+  dbUpdate("service_registry", s);
+  logAudit("Statut du service modifié", s.name + " — " + s.status);
+  loadServiceRegistryList();
+  renderDynamicServicesNav();
+}
+function deleteDynamicService(id) {
+  if (currentUserRole !== "fondateur") { alert("Réservé au Fondateur."); return; }
+  if (!confirm("Supprimer ce service ? Les enregistrements déjà saisis resteront dans le dossier médical des patients mais ne seront plus accessibles depuis ce service.")) return;
+  dbDelete("service_registry", id);
+  logAudit("Service supprimé", id);
+  loadServiceRegistryList();
+  renderDynamicServicesNav();
+}
+function loadServiceRegistryList() {
+  const body = document.getElementById("service-registry-body");
+  if (!body) return;
+  const data = [...DB.service_registry].sort((a,b) => (a.display_order||0) - (b.display_order||0));
+  body.innerHTML = data.length ? data.map(s => `
+    <tr><td style="font-size:18px">${s.icon}</td><td>${s.name}</td><td class="mono">${s.code}</td><td>${s.category}</td>
+    <td>${s.status === "actif" ? '<span class="badge ok">Actif</span>' : '<span class="badge warn">Inactif</span>'}</td>
+    <td><div class="queue-actions">
+      <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="toggleServiceStatus('${s.id}')">${s.status === "actif" ? "Désactiver" : "Réactiver"}</button>
+      <button class="btn secondary" style="padding:4px 10px;font-size:11px" onclick="deleteDynamicService('${s.id}')">Supprimer</button>
+    </div></td></tr>`).join("") : '<tr><td colspan="6" class="empty">Aucun service personnalisé créé.</td></tr>';
+}
+
+// ---- Navigation dynamique ----
+function renderDynamicServicesNav() {
+  const box = document.getElementById("dynamic-services-nav");
+  if (!box) return;
+  const active = DB.service_registry.filter(s => s.status === "actif").sort((a,b) => (a.display_order||0) - (b.display_order||0));
+  box.innerHTML = active.map(s => `<button class="nav-btn dynamic-nav-btn" style="border-left:3px solid ${s.color}" onclick="openDynamicService('${s.id}')"><span class="nav-dot"></span>${s.icon} ${s.name}</button>`).join("");
+}
+function openDynamicService(serviceId) {
+  const s = DB.service_registry.find(x => x.id === serviceId);
+  if (!s) return;
+  currentDynamicServiceId = serviceId;
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  sections.forEach(sec => document.getElementById("section-" + sec).classList.toggle("active", sec === "dynamicservice"));
+  document.getElementById("page-title").textContent = s.icon + " " + s.name;
+  document.getElementById("page-sub").textContent = s.description || "";
+  document.getElementById("mobile-page-title").textContent = s.name;
+  document.getElementById("period-select").style.display = "none";
+  closeSidebar();
+  renderDynamicServiceSection(serviceId);
+}
+function renderDynamicServiceSection(serviceId) {
+  const s = DB.service_registry.find(x => x.id === serviceId);
+  const box = document.getElementById("dynamic-service-content");
+  if (!s || !box) return;
+  const now = new Date();
+  const monthPrefix = now.getFullYear() + "-" + pad2(now.getMonth()+1);
+  const records = DB.service_records.filter(r => r.service_id === serviceId);
+  const recordsThisMonth = records.filter(r => (r.created_at||"").startsWith(monthPrefix)).length;
+  box.innerHTML = `
+    <div class="panel" style="border-left:4px solid ${s.color}">
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <div style="font-size:32px">${s.icon}</div>
+        <div>
+          <h3 style="margin-bottom:2px">${s.name} <span class="sub">(${s.code})</span></h3>
+          <p class="sub">${s.description || "—"}</p>
+          <p class="sub">${s.responsible ? "Responsable : " + s.responsible + " — " : ""}${[s.location_building, s.location_floor, s.location_room].filter(Boolean).join(", ") || ""}${s.hours ? " — " + s.hours : ""}</p>
+          <p class="sub">${s.phone ? "📞 " + s.phone + " " : ""}${s.email ? "✉️ " + s.email : ""}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi-card blue"><div class="kpi-label">Enregistrements (mois)</div><div class="kpi-value">${recordsThisMonth}</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Total enregistrements</div><div class="kpi-value">${records.length}</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Recettes (mois)</div><div class="kpi-value">${DB.invoices.filter(i => i.source === "service_" + s.code && (i.invoice_date||"").startsWith(monthPrefix)).reduce((sum,i)=>sum+Number(i.paid_amount||0),0).toLocaleString("fr-FR")} GNF</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Nouvel enregistrement — ${s.name}</h3>
+      <div class="form-row">
+        <input id="dsvc-patient-id" placeholder="N° de dossier patient">
+        <button class="btn secondary" onclick="lookupDynamicServicePatient()">Rechercher</button>
+        <span class="sub" id="dsvc-patient-info" style="align-self:center"></span>
+      </div>
+      ${(s.custom_fields||[]).length ? (s.custom_fields||[]).map(f => renderDynamicFieldInput(f)).join("") : '<p class="sub" style="margin-bottom:10px">Aucun champ personnalisé défini pour ce service — seul un enregistrement simple (date + patient) sera créé. Ajoutez des champs depuis Administration des Services.</p>'}
+      <div class="form-row">
+        <input id="dsvc-fee" type="number" min="0" placeholder="Montant à facturer (GNF, optionnel)">
+      </div>
+      <button class="btn" onclick="submitDynamicServiceRecord('${serviceId}')">Enregistrer</button>
+    </div>
+
+    <div class="panel">
+      <h3>Historique des enregistrements</h3>
+      <table>
+        <thead><tr><th>Date</th><th>Patient</th><th>Détails</th><th>Par</th></tr></thead>
+        <tbody id="dsvc-records-body"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Rapports</h3>
+      <button class="btn secondary" onclick="printDynamicServiceReport('${serviceId}')">🖨️ Rapport (PDF A4)</button>
+    </div>`;
+  renderDynamicServiceRecords(serviceId);
+}
+function renderDynamicFieldInput(field) {
+  const id = "dsvc-field-" + field.id;
+  if (field.type === "list") {
+    return `<div class="form-row"><select id="${id}" data-label="${field.label}" data-required="${field.required}"><option value="">— ${field.label}${field.required ? " *" : ""} —</option>${field.options.map(o => `<option value="${o}">${o}</option>`).join("")}</select></div>`;
+  }
+  if (field.type === "checkbox") {
+    return `<div class="form-row"><label style="align-self:center;font-size:13px"><input type="checkbox" id="${id}" data-label="${field.label}"> ${field.label}${field.required ? " *" : ""}</label></div>`;
+  }
+  if (field.type === "date") {
+    return `<div class="form-row"><input id="${id}" type="date" data-label="${field.label}" placeholder="${field.label}${field.required ? " *" : ""}"></div>`;
+  }
+  if (field.type === "number") {
+    return `<div class="form-row"><input id="${id}" type="number" data-label="${field.label}" placeholder="${field.label}${field.required ? " *" : ""}"></div>`;
+  }
+  if (field.type === "image" || field.type === "file") {
+    return `<div class="form-row"><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">${field.label}${field.required ? " *" : ""}</label><input id="${id}" type="file" accept="${field.type === "image" ? "image/*" : "*"}" data-label="${field.label}" data-type="${field.type}"></div>`;
+  }
+  if (field.type === "signature") {
+    return `<div class="form-row"><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">${field.label} (signature — nom complet en guise de signature électronique)${field.required ? " *" : ""}</label><input id="${id}" placeholder="Nom complet du signataire" data-label="${field.label}" data-type="signature"></div>`;
+  }
+  return `<div class="form-row"><input id="${id}" data-label="${field.label}" placeholder="${field.label}${field.required ? " *" : ""}"></div>`;
+}
+let currentDsvcPatient = null;
+function lookupDynamicServicePatient() {
+  const id = document.getElementById("dsvc-patient-id").value.trim();
+  const info = document.getElementById("dsvc-patient-info");
+  const p = DB.patients.find(pp => pp.id === id);
+  if (!p) { info.textContent = "Patient introuvable."; info.style.color = "var(--red)"; currentDsvcPatient = null; return; }
+  currentDsvcPatient = p;
+  info.style.color = "var(--green)";
+  info.textContent = p.first_name + " " + p.last_name;
+}
+async function submitDynamicServiceRecord(serviceId) {
+  const s = DB.service_registry.find(x => x.id === serviceId);
+  if (!s) return;
+  if (!currentDsvcPatient) { alert("Recherchez d'abord un patient valide."); return; }
+  const data = {};
+  for (const f of (s.custom_fields || [])) {
+    const el = document.getElementById("dsvc-field-" + f.id);
+    if (!el) continue;
+    let value;
+    if (f.type === "checkbox") value = el.checked;
+    else if (f.type === "image" || f.type === "file") value = (el.files && el.files[0]) ? await readFileAsDataURL(el) : null;
+    else value = el.value;
+    if (f.required && (value === "" || value === null || value === undefined)) { alert("Le champ « " + f.label + " » est obligatoire."); return; }
+    data[f.label] = value;
+  }
+  dbAdd("service_records", { service_id: serviceId, service_name: s.name, patient_id: currentDsvcPatient.id, patient_label: currentDsvcPatient.first_name + " " + currentDsvcPatient.last_name, data, created_by: currentUserName || null });
+  const fee = parseFloat(document.getElementById("dsvc-fee").value) || 0;
+  if (fee > 0) dbAdd("invoices", { patient_id: currentDsvcPatient.id, patient_label: currentDsvcPatient.first_name + " " + currentDsvcPatient.last_name, total_amount: fee, status: "en_attente", invoice_date: new Date().toISOString().slice(0,10), label: s.name, source: "service_" + s.code });
+  if (s.notification_settings && s.notification_settings.internal && s.responsible) {
+    notifyUser(s.responsible, "Nouvel enregistrement " + s.name + " pour " + currentDsvcPatient.first_name + " " + currentDsvcPatient.last_name, "service_" + s.code, null);
+  }
+  logAudit("Enregistrement " + s.name, "Patient " + currentDsvcPatient.id);
+  document.getElementById("dsvc-patient-id").value = "";
+  document.getElementById("dsvc-patient-info").textContent = "";
+  currentDsvcPatient = null;
+  renderDynamicServiceSection(serviceId);
+  alert("Enregistrement créé dans le dossier médical du patient.");
+}
+function renderDynamicServiceRecords(serviceId) {
+  const body = document.getElementById("dsvc-records-body");
+  if (!body) return;
+  const data = DB.service_records.filter(r => r.service_id === serviceId).sort((a,b) => (b.created_at||"").localeCompare(a.created_at||""));
+  body.innerHTML = data.length ? data.map(r => `
+    <tr><td class="mono">${new Date(r.created_at).toLocaleString("fr-FR")}</td><td>${r.patient_label}</td>
+    <td style="font-size:11.5px">${Object.keys(r.data||{}).map(k => k + " : " + (typeof r.data[k] === "boolean" ? (r.data[k] ? "Oui" : "Non") : (String(r.data[k]||"").startsWith("data:") ? "📎 fichier" : r.data[k]))).join(" · ") || "—"}</td>
+    <td>${r.created_by || "—"}</td></tr>`).join("") : '<tr><td colspan="4" class="empty">Aucun enregistrement.</td></tr>';
+}
+function printDynamicServiceReport(serviceId) {
+  const s = DB.service_registry.find(x => x.id === serviceId);
+  const data = DB.service_records.filter(r => r.service_id === serviceId);
+  const revenue = DB.invoices.filter(i => i.source === "service_" + s.code).reduce((sum,i)=>sum+Number(i.paid_amount||0),0);
+  openPrintWindow("Rapport — " + s.name, `
+    <h2>${s.icon} ${s.name}</h2>
+    <p>${CLINIC_NAME} — ${new Date().toLocaleDateString("fr-FR")}</p>
+    <table><tbody>
+      <tr><td>Enregistrements totaux</td><td>${data.length}</td></tr>
+      <tr><td>Recettes cumulées</td><td>${revenue.toLocaleString("fr-FR")} GNF</td></tr>
+    </tbody></table>`);
 }
 
 function loadInvoices() {
